@@ -1,0 +1,5 @@
+# task id, estimated minutes, and title (tab-delimited)
+1	45	Learn how to create a Trac plugin.
+2	60	ebscp 1.5  /mark/ticket/1/hours
+3	30	ebsls /mark/tickets/
+4	60	ebsls /mark/timecard/07-2010/1-15

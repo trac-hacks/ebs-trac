@@ -1,0 +1,6 @@
+# task id, user, date, start, stop, elapsed
+# in vim, 
+#	:r !date +\%T 	--> HH:MM:SS
+#	:r !date +\%F 	--> YYYY-MM-DD
+
+1	mark	2010-08-12	15:57:45
