@@ -27,8 +27,14 @@ class EBSComponent(Component):
 		return req.path_info.startswith('/ebs/')
 
 	def process_request(self, req):
+
+		#self.log.debug("PATH_INFO: %s" % (req.path_info,))
+
+		# /ebs/mark/tickets --> a[1]='ebs', a[2]='mark', ...
+		# if trailing slash, len() == 5.
 		a = req.path_info.split('/')
-		if len(a) > 3 and a[3] == 'tickets':
-			ebstrac.handlers.ticketget(req)
+		if len(a) in (4,5) and a[3] == 'tickets':
+			user = a[2]
+			ebstrac.handlers.ticketget(self.env, req, user)
 		else:
 			ebstrac.handlers.error(req, "invalid url")

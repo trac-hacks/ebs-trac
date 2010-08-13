@@ -7,16 +7,27 @@ def error(req, data):
 	req.send_header('Content-Length', len(data))
 	req._send_cookie_headers()
 	req.write(data)
-	raise RequestDone
 
-def ticketget(req):
+def ticketget(env, req, user):
+	f = "ticketget"
 	if req.method != 'GET':
-		handlers.error(req, "not a GET")
+		return handlers.error(req, "%s: expected a GET" % f)
+	
+	db = env.get_db_cnx()
+	cursor = db.cursor()
+	sql = "SELECT id, summary FROM ticket WHERE owner = %s " \
+	    + "AND status != 'closed' ORDER BY id"
+	cursor.execute(sql, (user,))
 
-	data = "Hello, world!"
+	a = ["All open tasks for user %s:" % (user,)]
+	for row in cursor.fetchall():
+		tid = row[0]
+		tnm = row[1]
+		a.append("%6d  %s" % (tid, tnm))
+	a.append("\n")
+	data = "\n".join(a)
 	req.send_response(200)
 	req.send_header('Content-Type', 'plain/text')
 	req.send_header('Content-Length', len(data))
-	req._send_cookie_headers()
+	#req._send_cookie_headers()
 	req.write(data)
-	raise RequestDone

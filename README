@@ -17,6 +17,9 @@ INSTALLING THE PLUGIN
 		[components]
 		ebstrac.* = enabled
 		...
+
+	If you are running trac as a FastCGI daemon, you'll
+	have to kill then restart it.	
 	
 
 FILES IN THIS PROJECT
