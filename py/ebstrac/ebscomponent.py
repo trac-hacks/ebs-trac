@@ -1,4 +1,4 @@
-# Evidence-Based scheduling plugin for Trac.
+# Evidence-Based Scheduling Trac component.
 # 
 # Copyright (c) 2010, Mark Bucciarelli <mark@crosscutmedia.com>
 # 
