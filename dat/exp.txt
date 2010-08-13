@@ -1,8 +1,8 @@
 # task id, estimated minutes, and title (tab-delimited)
 1	45	Learn how to create a Trac plugin.
-2	30	ebsls /mark/tickets/
-3	60	Install plugin that enables ebsls /mark/tickets
-4	60	ebscp 1.5  /mark/ticket/1/hours
+2	30	ebsls /ebs/mark/tickets/
+3	60	Install plugin that enables ebsls /ebs/mark/tickets
+4	60	ebscp 1.5  /ebs/mark/ticket/1/hours
 5	30	Update plugin install with new ebscp command.
-6	60	ebsls /mark/timecard/07-2010/1-15
+6	60	ebsls /ebs/mark/timecard/07-2010/1-15
 7	30	stop.sh
