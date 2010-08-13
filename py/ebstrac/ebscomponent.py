@@ -22,7 +22,7 @@ class EBSComponent(Component):
 	implements(IRequestHandler)
 
 	def match_request(self, req):
-		return req.path_info == '/ebs'
+		return req.path_info.startswith('/ebs/')
 
 	def _errmsg(self, req, data):
 		req.send_response(400)

@@ -6,3 +6,4 @@
 5	30	Update plugin install with new ebscp command.
 6	60	ebsls /ebs/mark/timecard/07-2010/1-15
 7	30	stop.sh
+8	30	Implement ebsls as shell script that uses cURL.

@@ -1,0 +1,21 @@
+#! /bin/sh -ex
+#
+# GET data from Trac, and list response to stdout.
+#
+# Expects ~/.ebstrac with the following content:
+#
+#	protocol=https
+#	host=www.example.com
+#	user=tracuser
+#	pass=tracuser_password
+#
+
+
+usage="$0 <url>"
+[ "x$1" = "x" ] && echo $usage > "/dev/stderr" && exit 1
+url=$1
+
+. ~/.ebstrac
+
+# -k option, b/c my SSL cert is self-signed, old, for wrong domain.
+curl -k --user $user:$pass $protocol://$host/$url
