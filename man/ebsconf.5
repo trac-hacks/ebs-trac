@@ -62,11 +62,11 @@ The password for the Trac user.
 .Dl $ cat > ~/.ebsconf
 .Dl protocol=https
 .Dl host=www.example.com
-.Dl prefix=/trac/ebs
+.Dl urlprefix=trac/ebs
 .Dl user=mark
 .Dl pass=rover
 .Dl ^D
-.Dl $ chmod 400 ~/.ebsconf
+.Dl $ chmod 600 ~/.ebsconf
 .Sh SEE ALSO
 .Xr ebsls 1
 .Rs

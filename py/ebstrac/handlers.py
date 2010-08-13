@@ -36,7 +36,7 @@ def ticketget(env, req, user):
 	    + "AND status != 'closed' ORDER BY id"
 	cursor.execute(sql, (user,))
 
-	a = ["All open tasks for user %s:" % (user,)]
+	a = []
 	for row in cursor.fetchall():
 		tid = row[0]
 		tnm = row[1]
