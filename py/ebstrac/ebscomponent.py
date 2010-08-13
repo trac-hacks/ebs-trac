@@ -18,29 +18,17 @@
 from trac.core import *
 from trac.web.main import IRequestHandler
 
+import ebstrac
+
 class EBSComponent(Component):
 	implements(IRequestHandler)
 
 	def match_request(self, req):
 		return req.path_info.startswith('/ebs/')
 
-	def _errmsg(self, req, data):
-		req.send_response(400)
-		req.send_header('Content-Type', 'plain/text')
-		req.send_header('Content-Length', len(data))
-		req._send_cookie_headers()
-		req.write(data)
-		raise RequestDone
-		
 	def process_request(self, req):
-
-		if req.method != 'GET':
-			self._err(req, "not a GET")
-
-		data = "Hello, world!"
-		req.send_response(200)
-		req.send_header('Content-Type', 'plain/text')
-		req.send_header('Content-Length', len(data))
-		req._send_cookie_headers()
-		req.write(data)
-		raise RequestDone
+		a = req.path_info.split('/')
+		if len(a) > 3 and a[3] == 'tickets':
+			ebstrac.handlers.ticketget(req)
+		else:
+			ebstrac.handlers.error(req, "invalid url")
