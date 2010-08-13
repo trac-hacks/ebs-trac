@@ -1,0 +1,72 @@
+#! /bin/sh -e
+#
+# Terminate last entry in ../dat/act.txt and calculate elapsed time.
+#
+
+
+usage="$0 [<username>]"
+
+# Get optional username from command line args.
+user=$(whoami)
+if [ "x$1" != "x" ]; then user=$1; fi
+
+# Make sure we can find file holding actual data.
+fn=./dat/act.txt
+if [ ! -f $fn ]; then 
+	echo "ERROR: can't open $fn"
+	exit 1
+fi
+
+tm=$(date +%T)
+
+# Sample last line (tab-delimited):
+#
+# 	2	mark	2010-08-13	10:37:41
+#
+
+nflds=4
+n=$(cat $fn | wc -l)
+cat > t.awk << EOF
+BEGIN { 
+	FS = OFS = "\t" 
+}
+NR < $n	{
+	print
+	next
+}
+NR == $n {
+	if (NF != $nflds) {
+		print "ERROR: not $nflds fields in last row of $fn" >> "/dev/stderr"
+		exit 1
+	}
+	tid = \$1
+	user = \$2
+	dt = \$3
+	t0 = \$4
+	t1 = "$tm"
+	split(t0, a0, ":")
+	split(t1, a1, ":")
+	h0 = a0[1]
+	m0 = a0[2]
+	s0 = a0[3]
+	h1 = a1[1]
+	m1 = a1[2]
+	s1 = a1[3]
+	delta = (h1 - h0) * 60
+	delta = delta + (m1 - m0)
+	if (s1 - s0 > 30)
+		delta = delta + 1
+	else if (s1 - s0 < -30) {
+		# don't round down to zero minutes
+		if (delta > 1)
+			delta = delta - 1
+	}
+
+	print tid, user, dt, t0, t1, delta
+}
+EOF
+
+cat $fn | awk -f t.awk > t.out
+mv t.out $fn
+
+rm t.awk

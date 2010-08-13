@@ -15,7 +15,7 @@ if [ "x$2" != "x" ]; then user=$2; fi
 # Make sure we can find file holding actual data.
 fn=./dat/act.txt
 if [ ! -f $fn ]; then 
-	echo "ERROR: run from parent directory of ./dat/"
+	echo "ERROR: can't open $fn"
 	exit 1
 fi
 
