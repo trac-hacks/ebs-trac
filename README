@@ -1,8 +1,26 @@
 A plug-in that enables evidence-based scheduling in Trac.
 
 	Created: Thu Aug 12 15:47:00 EDT 2010
-
 	Status : Just starting out.
+
+
+CONTENTS
+	DEPENDENCIES
+	INSTALLING THE PLUGIN
+	INSTALLING THE CLIENT
+	FILES IN THIS PROJECT
+
+
+
+DEPENDENCIES
+
+	The plugin was developed against Trac 0.10.4, which is ancient,
+	but hopefully it will work any subsequent version.  It doesn't
+	do anything very tricky, just uses the RequestHandler interface
+	and custom ticket fields.
+
+	To use the command-line client utilities, you need to have
+	curl installed.
 
 
 INSTALLING THE PLUGIN
@@ -17,10 +35,28 @@ INSTALLING THE PLUGIN
 		[components]
 		ebstrac.* = enabled
 		...
+		[ticket-custom]
+		estimatedhours = text
+		estimatedhours.label = Estimated Hours
+		estimatedhours.order = 1
+		estimatedhours.value = 0
+		actualhours = text
+		actualhours.label = Actual Ticket
+		actualhours.order = 2
+		actualhours.value = 0
+		...
 
 	If you are running trac as a FastCGI daemon, you'll
-	have to kill then restart it.	
+	have to kill then restart the daemon.	
+
+
+INSTALLING THE CLIENT
+
+	To install ebsls and the manual pages for ebsls and ebsconf, type:
+
+		$ sudo make install-client
 	
+
 
 FILES IN THIS PROJECT
 
