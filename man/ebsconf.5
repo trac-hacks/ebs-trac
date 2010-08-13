@@ -1,0 +1,77 @@
+.\"
+." Copyright (c) 2010, Mark Bucciarelli <mark@crosscutmedia.com>
+." 
+." Permission to use, copy, modify, and/or distribute this software for any
+." purpose with or without fee is hereby granted, provided that the above
+." copyright notice and this permission notice appear in all copies.
+." 
+." THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+." WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+." MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+." ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+." WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+." ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+." OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+." 
+.\"
+.\"
+
+.Dd August 13, 2010
+.Dt EBSCONF 5
+.Os
+.
+.Sh NAME
+.Nm ebsconf
+.Nd ebsls configuration file
+.Sh SYNOPSIS
+.Nm ~/.ebsconf
+.Sh DESCRIPTION
+.Xr ebsls 1
+obtains configuration data from the user's configuration file
+.Pq Pa ~/.ebsconf .  
+The configuration file has the following format:
+.Pp
+Empty lines and lines starting with
+.Ql #
+are comments.
+Otherwise a line is of the format
+.Dq keyword=value .
+There must be no spaces around the equals sign.  If a keyword value includes 
+any whitespace, the value must be enclosed in double quotes
+.Pq \&" .
+.Pp
+The possible
+keywords and their meanings are as follows (note that
+both keywords and values are case-sensitive):
+.Bl -tag -width Ds
+.It Cm protocol
+The protocol used to connect to Trac; for example, https.
+.It Cm host
+The host on which Trac is running.
+.It Cm urlprefix
+An url prefix to prepend to the resource before making the request
+to Trac.  At a minimum, this should be 
+.Dq ebs/ .
+.It Cm user
+The Trac user name.
+.It Cm pass
+The password for the Trac user.
+.El
+.Sh EXAMPLES
+.Pp
+.Dl $ cat > ~/.ebsconf
+.Dl protocol=https
+.Dl host=www.example.com
+.Dl prefix=/trac/ebs
+.Dl user=mark
+.Dl pass=rover
+.Dl ^D
+.Dl $ chmod 400 ~/.ebsconf
+.Sh SEE ALSO
+.Xr ebsls 1
+.Rs
+.%A Joel Spolsky
+.%T "Evidence Based Scheduling"
+.%J "http://www.joelonsoftware.com/items/2007/10/26.html"
+.%D 2007
+.Re
