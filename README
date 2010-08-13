@@ -5,13 +5,30 @@ A plug-in that enables evidence-based scheduling in Trac.
 	Status : Just starting out.
 
 
+INSTALLING THE PLUGIN
 
-./dat/
-	Holds data files that tracked development of this plugin using
-	evidence-based scheduling techniques.
+	$ make
+	$ sudo make install
 
-./dat/est.txt
-	Tasks and their time estimates, in minutes.
+	Edit your trac conf (e.g., /usr/local/trac/conf/trac.ini)
+	to enable the ebstrac component.
 
-./dat/act.txt
-	Actual time spent working, in minutes.
+		...
+		[components]
+		ebstrac.* = enabled
+		...
+	
+
+FILES IN THIS PROJECT
+
+	./dat/
+		Files that tracked time spent developing this plugin.
+
+	./dat/est.txt
+		Tasks and their time estimates, in minutes.
+
+	./dat/act.txt
+		Actual time spent working, in minutes.
+
+	./py/
+		Python sources.
