@@ -80,6 +80,19 @@ def posthours(component, req, user, tid):
 	fmt = "%s: %s logged %.4f hours to ticket %s (new total=%s)"
 	component.log.info(fmt % (f, user, delta, tid, newval))
 
+	#
+	# Don't allow time to be booked until an estimate has been made.
+	#
+
+	sql = "SELECT value FROM  ticket_custom " \
+	    + "WHERE ticket=%s AND name='estimatedhours'"
+	params = (tid,)
+	cursor.execute(sql, params)
+	row = cursor.fetchone()
+	if not row:
+		error(req, "You can't charge time until you " \
+		    + "have made an estimate.")
+
 	# if any exceptions, rollback everything
 	ok = True
 	try:
@@ -136,4 +149,3 @@ def posthours(component, req, user, tid):
 		raise RequestDone
 	else:
 		error(req, "Internal error.")
-
