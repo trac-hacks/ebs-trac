@@ -52,7 +52,11 @@ NR == $n {
 	h1 = a1[1]
 	m1 = a1[2]
 	s1 = a1[3]
-	delta = (h1 - h0) * 60
+	if (h1 > h0)
+		delta = (h1 - h0) * 60
+	else
+		# assume working past midnight
+		delta = (h1 + 24 - h0) * 60
 	delta = delta + (m1 - m0)
 	if (s1 - s0 > 30)
 		delta = delta + 1
