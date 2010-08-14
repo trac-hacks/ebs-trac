@@ -15,6 +15,8 @@
 # OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 # 
 
+import re
+
 from trac.core import *
 from trac.web.main import IRequestHandler
 
@@ -51,10 +53,17 @@ class EBSComponent(Component):
 		#    ('', 'ebs', 'mark', 'ticket', '1', 'hours')
 		# /ebs/mark/ticket/1/hours/
 		#    ('', 'ebs', 'mark', 'ticket', '1', 'hours', '')
-		elif len(a) in (6,7) and a[3] == 'ticket' and a[5] == 'hours':
+		# /ebs/mark/ticket/1/hours/2010-08-14/
+		#    ('', 'ebs', 'mark', 'ticket', '1', 'hours', '2010-08-14', '')
+		elif len(a) in (6,7,8) and a[3] == 'ticket' and a[5] == 'hours':
 			user = a[2]
 			tid = a[4]
-			ebstrac.handlers.posthours(self, req, user, tid)
+			dt = None
+			if len(a) > 6:
+				p = re.compile('\d{4}-\d{2}-\d{2}')	
+				if p.match(a[6]):
+					dt = a[6]
+			ebstrac.handlers.posthours(self, req, user, tid, dt)
 
 		# /ebs/mark/ticket/1/estimate
 		#    ('', 'ebs', 'mark', 'ticket', '1', 'estimate')

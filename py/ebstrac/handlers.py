@@ -99,7 +99,7 @@ def getlog(env, req, user):
 	req.write(data)
 	raise RequestDone
 
-def posthours(component, req, user, tid):
+def posthours(component, req, user, tid, dt):
 	'''Associate the hours someone worked with a ticket.'''
 	f = "posthours"
 	if req.method != 'GET':
@@ -160,13 +160,14 @@ def posthours(component, req, user, tid):
 			col_n = int(row[0])
 		col_n += 1
 
-		dt = int(time.mktime(time.localtime()))
+		tm = int(time.mktime(time.localtime()))
+
 		sql = "INSERT INTO ticket_change ( " \
 		    + "ticket, time, author, field, oldvalue, newvalue" \
 		    + ") VALUES ( " \
 		    + "%s, %s, %s, %s, %s, %s" \
 		    + ")"
-		params = (tid, dt, user, 'actualhours', oldval, newval)
+		params = (tid, tm, user, 'actualhours', oldval, newval)
 		cursor.execute(sql, params)
 
 		sql = "INSERT INTO ticket_change ( " \
@@ -174,7 +175,9 @@ def posthours(component, req, user, tid):
 		    + ") VALUES ( " \
 		    + "%s, %s, %s, %s, %s, %s" \
 		    + ")"
-		params = (tid, dt, user, 'comment', col_n, '')
+		params = [tid, tm, user, 'comment', col_n, '']
+		if dt is not None:
+			params[-1] = 'posted on %d, applied to %s' % (tm, dt)
 		cursor.execute(sql, params)
 
 		db.commit()
