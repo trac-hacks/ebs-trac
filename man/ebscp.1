@@ -21,7 +21,7 @@
 .Os
 .
 .Sh NAME
-.Nm ls
+.Nm ebscp
 .Nd post data to evidence-based scheduling resource in Trac
 .Sh SYNOPSIS
 .Nm ebscp
@@ -30,17 +30,24 @@
 .Sh DESCRIPTION
 If the POST succeeds, the output of
 .Nm
-is OK
+is OK.
 .Pp
 The supported resources are listed below.
+.Ss ticket/ticket_number/estimate
+.Pp
+Specify how many hours you think 
+.Ar ticket_number 
+will take.
 .Ss ticket/ticket_number/hours
 .Pp
-Post time you have worked to ticket number
+Add hours worked
 .Ar ticket_number .
+The ticket must have an estimate before you can post
+time to it.
 .Sh EXAMPLES
-Post 15 minutes to ticket number 10.
+Add 15 minutes to your total hours worked on ticket number 10.
 .Pp
-.Dl $ ebscp 15 ticket/10/hours
+.Dl $ ebscp .25 ticket/10/hours
 .Dl OK$ 
 .Sh SEE ALSO
 .Xr ebsls 5

@@ -166,7 +166,9 @@ def postestimate(component, req, user, tid):
 		efmt = "%s: ticket %s doesn't have estimatedhours custom field"
 		error(req, efmt % (f, tid))
 
-	oldval = float(row[0])
+	oldval = 0.0
+	if row[0]:
+		oldval = float(row[0])
 	newval = float(req.args['data'])
 	if newval < 0:
 		efmt = "%s: can't have a negative estimate"

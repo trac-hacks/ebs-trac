@@ -47,5 +47,14 @@ class EBSComponent(Component):
 			tid = a[4]
 			ebstrac.handlers.posthours(self, req, user, tid)
 
+		# /ebs/mark/ticket/1/estimate
+		#    ('', 'ebs', 'mark', 'ticket', '1', 'estimate')
+		# /ebs/mark/ticket/1/estimate/
+		#    ('', 'ebs', 'mark', 'ticket', '1', 'estimate', '')
+		elif len(a) in (6,7) and a[3] == 'ticket' and a[5] == 'estimate':
+			user = a[2]
+			tid = a[4]
+			ebstrac.handlers.postestimate(self, req, user, tid)
+
 		else:
 			ebstrac.handlers.error(req, "invalid url")
