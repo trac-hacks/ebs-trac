@@ -12,7 +12,7 @@ X	10	30	Write install-client Makefile target
 X	11	60	ebsls log
 X	12	45	Allow user to specify date other than today for hours.
 	13	60	ebsls fulltickets
-	14	15	BUGS man page: log doesn't respect prior dates
+X	14	15	BUGS man page: log doesn't respect prior dates
 	15	45	ebscp closed ticket/1/status
 	16	30	Only allow people to modify tickets they own.
 	17	60	Refactor: use list of (testfcn,handlerfcn) tuples.
