@@ -17,39 +17,33 @@
 .\"
 
 .Dd August 13, 2010
-.Dt EBSLS 1
+.Dt EBSCP 1
 .Os
 .
 .Sh NAME
 .Nm ls
-.Nd list contents of an evidence-based scheduling resource in Trac
+.Nd post data to evidence-based scheduling resource in Trac
 .Sh SYNOPSIS
-.Nm ebsls
+.Nm ebscp
+.Ar data
 .Ar resource
 .Sh DESCRIPTION
-The output of
+If the POST succeeds, the output of
 .Nm
-depends on the
-.Ar resource
-specified.
-.Ss /username/tickets/
+is OK
 .Pp
-One row for each ticket owned by the user 
-.Ar username .
-Only tickets with a status not equal to ``closed'' are listed.
-Each row has the following space-delimited columns:
+The supported resources are listed below.
+.Ss ticket/ticket_number/hours
 .Pp
-.Bl -enum -offset indent -compact
-.It 
-ticket id
-.It 
-ticket summary
-.El
+Post time you have worked to ticket number
+.Ar ticket_number .
 .Sh EXAMPLES
-List mark's tickets:
+Post 15 minutes to ticket number 10.
 .Pp
-.Dl $ ebsls /mark/tickets/
+.Dl $ ebscp 15 ticket/10/hours
+.Dl OK$ 
 .Sh SEE ALSO
+.Xr ebsls 5
 .Xr ebsconf 5
 .Rs
 .%A Joel Spolsky

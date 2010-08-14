@@ -13,7 +13,7 @@
 ." ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 ." OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 ." 
-.\"
+." NOTE: to test, $cat ebsls.1 | man -l -
 .\"
 
 .Dd August 13, 2010
@@ -32,10 +32,12 @@ The output of
 depends on the
 .Ar resource
 specified.
-.Ss /username/tickets/
 .Pp
-One row for each ticket owned by the user 
-.Ar username .
+The supported resources are listed below.
+.Ss /tickets/
+.Pp
+One row for each ticket owned by your Trac user, as defined in 
+.Pa ~/.ebsconf .  
 Only tickets with a status not equal to ``closed'' are listed.
 Each row has the following space-delimited columns:
 .Pp
@@ -48,8 +50,9 @@ ticket summary
 .Sh EXAMPLES
 List mark's tickets:
 .Pp
-.Dl $ ebsls /mark/tickets/
+.Dl $ ebsls tickets/
 .Sh SEE ALSO
+.Xr ebscp 1
 .Xr ebsconf 5
 .Rs
 .%A Joel Spolsky

@@ -20,7 +20,7 @@ DEPENDENCIES
 	and custom ticket fields.
 
 	To use the command-line client utilities, you need to have
-	curl installed.
+	curl and python installed.
 
 
 INSTALLING THE PLUGIN
@@ -52,7 +52,7 @@ INSTALLING THE PLUGIN
 
 INSTALLING THE CLIENT
 
-	To install ebsls and the manual pages for ebsls and ebsconf, type:
+	To install the client utilities and their man pages, type:
 
 		$ sudo make install-client
 	

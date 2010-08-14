@@ -22,12 +22,12 @@
 .
 .Sh NAME
 .Nm ebsconf
-.Nd ebsls configuration file
+.Nd configuration file for client utilities for Trac's EBS plugin
 .Sh SYNOPSIS
 .Nm ~/.ebsconf
 .Sh DESCRIPTION
-.Xr ebsls 1
-obtains configuration data from the user's configuration file
+The client utilities for Trac's evidence-based scheduling plugin 
+all obtain configuration data from the user's configuration file
 .Pq Pa ~/.ebsconf .  
 The configuration file has the following format:
 .Pp
@@ -62,13 +62,14 @@ The password for the Trac user.
 .Dl $ cat > ~/.ebsconf
 .Dl protocol=https
 .Dl host=www.example.com
-.Dl urlprefix=trac/ebs
 .Dl user=mark
 .Dl pass=rover
+.Dl urlprefix=trac/ebs/$user
 .Dl ^D
 .Dl $ chmod 600 ~/.ebsconf
 .Sh SEE ALSO
 .Xr ebsls 1
+.Xr ebscp 1
 .Rs
 .%A Joel Spolsky
 .%T "Evidence Based Scheduling"
