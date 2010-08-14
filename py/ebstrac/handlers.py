@@ -77,7 +77,7 @@ def posthours(component, req, user, tid):
 	if newval < 0:
 		efmt = "%s: can't end up with negative hours, task only has %s hours"
 		error(req, efmt % (f, oldval))
-	fmt = "%s: %s logged %.4f hours to ticket %s (new total=%s)"
+	fmt = "%s: %s logging %.4f hours to ticket %s (new total=%s)"
 	component.log.info(fmt % (f, user, delta, tid, newval))
 
 	#
@@ -89,7 +89,7 @@ def posthours(component, req, user, tid):
 	params = (tid,)
 	cursor.execute(sql, params)
 	row = cursor.fetchone()
-	if not row:
+	if not row or not row[0] or float(row[0]) < 0.01:
 		error(req, "You can't charge time until you " \
 		    + "have made an estimate.")
 
@@ -123,6 +123,87 @@ def posthours(component, req, user, tid):
 		    + "%s, %s, %s, %s, %s, %s" \
 		    + ")"
 		params = (tid, dt, user, 'actualhours', oldval, newval)
+		cursor.execute(sql, params)
+
+		sql = "INSERT INTO ticket_change ( " \
+		    + "ticket, time, author, field, oldvalue, newvalue" \
+		    + ") VALUES ( " \
+		    + "%s, %s, %s, %s, %s, %s" \
+		    + ")"
+		params = (tid, dt, user, 'comment', col_n, '')
+		cursor.execute(sql, params)
+
+		db.commit()
+	except Exception, e:
+		db.rollback()
+		efmt = "%s: %s, sql=%s, params=%s"
+		component.log.error(efmt % (f, e, sql, params))
+		ok = False
+
+	if ok:
+		data="OK"
+		req.send_response(200)
+		req.send_header('Content-Type', 'plain/text')
+		req.send_header('Content-Length', len(data))
+		req.write(data)
+		raise RequestDone
+	else:
+		error(req, "Internal error.")
+
+def postestimate(component, req, user, tid):
+	'''Associate an estimate with a ticket.'''
+	f = "postestimate"
+	if req.method != 'GET':
+		error(req, "%s: expected a GET" % f)
+
+	db = component.env.get_db_cnx()
+	cursor = db.cursor()
+	sql = "SELECT value FROM ticket_custom " \
+	    + "WHERE name = 'estimatedhours' AND ticket = %s"
+	cursor.execute(sql, (tid,))
+	row = cursor.fetchone()
+	if not row:
+		efmt = "%s: ticket %s doesn't have estimatedhours custom field"
+		error(req, efmt % (f, tid))
+
+	oldval = float(row[0])
+	newval = float(req.args['data'])
+	if newval < 0:
+		efmt = "%s: can't have a negative estimate"
+		error(req, efmt % (f, ))
+	fmt = "%s: %s set estimate to %.4f hours for ticket %s (was %.4f)"
+	component.log.info(fmt % (f, user, newval, tid, oldval))
+
+	# if any exceptions, rollback everything
+	ok = True
+	try:
+		sql = "UPDATE ticket_custom SET value = %s " \
+		    + "WHERE ticket=%s AND name='estimatedhours'"
+		params = (newval, tid)
+		cursor.execute(sql, params)
+
+		# Trac stores every ticket field change as a comment.
+		# While I don't see where the comment text is that Trac
+		# renders, I know it is not stored in the ticket_change
+		# table.  However, Trac does enter a comment record, so
+		# I'll mimic that behavior here.  
+		sql = "SELECT max(oldvalue) FROM ticket_change " \
+		    + "WHERE ticket = %s AND field = 'comment'"
+		params = (tid, )
+		cursor.execute(sql, params)
+		row = cursor.fetchone()
+		col_n = 0
+		if row:
+			col_n = int(row[0])
+		col_n += 1
+
+		dt = int(time.mktime(time.localtime()))
+		sql = "INSERT INTO ticket_change ( " \
+		    + "ticket, time, author, field, oldvalue, newvalue" \
+		    + ") VALUES ( " \
+		    + "%s, %s, %s, %s, %s, %s" \
+		    + ")"
+		params = (tid, dt, user, 'estimatedhours', oldval, newval)
 		cursor.execute(sql, params)
 
 		sql = "INSERT INTO ticket_change ( " \
