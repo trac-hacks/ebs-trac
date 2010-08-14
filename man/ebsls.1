@@ -34,7 +34,7 @@ depends on the
 specified.
 .Pp
 The supported resources are listed below.
-.Ss /tickets/
+.Ss tickets
 .Pp
 One row for each ticket owned by your Trac user, as defined in 
 .Pa ~/.ebsconf .  
@@ -47,10 +47,31 @@ ticket id
 .It 
 ticket summary
 .El
-.Sh EXAMPLES
-List mark's tickets:
+.Ss log
 .Pp
-.Dl $ ebsls tickets/
+One row for time you posted time to a ticket.
+Each row has the following tab-delimited columns:
+.Pp
+.Bl -enum -offset indent -compact
+.It 
+ticket id
+.It 
+the date and time you logged the entry
+.It 
+hours worked
+.It 
+ticket summary (truncated so the report fits in 78 columns)
+.El
+.Sh EXAMPLES
+List your open tickets:
+.Pp
+.Dl $ ebsls tickets
+.Dl https://www.example.com/trac/ebs/mark/tickets:
+.Dl   593  API
+.Dl   690  SQL for Reporting
+.Dl   779  Get images to dev box.
+.Dl   848  testing ebs posting
+.Dl $
 .Sh SEE ALSO
 .Xr ebscp 1
 .Xr ebsconf 5

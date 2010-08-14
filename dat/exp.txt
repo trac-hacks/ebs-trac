@@ -9,3 +9,4 @@
 8	30	Implement ebsls as shell script that uses cURL.
 9	60	Write manual pages.
 10	30	Write install-client target (scripts, ~/.ebstrac, and manual)
+11	60	ebsls log
