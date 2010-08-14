@@ -70,6 +70,15 @@ List your open tickets:
 .Dl   779  Get images to dev box.
 .Dl   848  testing ebs posting
 .Dl $
+.Sh BUGS
+When listing the log, the date of the hours worked is always the date
+you posted the entry, and thus does not take into account the optional
+.Ar YYYY-MM-DD
+argument that 
+.Nm ebscp 
+takes.  The date stored in Trac does record that optional date, it 
+is just not used by 
+.Nm .
 .Sh SEE ALSO
 .Xr ebscp 1
 .Xr ebsconf 5
