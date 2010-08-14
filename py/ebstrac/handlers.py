@@ -15,6 +15,8 @@
 # OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 # 
 
+import time
+
 from trac.core import *
 from trac.web.main import \
 	IRequestHandler, \
@@ -29,6 +31,7 @@ def error(req, data):
 	raise RequestDone
 
 def ticketget(env, req, user):
+	'''Lookup all open (status != closed) tickets for a user.'''
 	f = "ticketget"
 	if req.method != 'GET':
 		error(req, "%s: expected a GET" % f)
@@ -53,6 +56,7 @@ def ticketget(env, req, user):
 	raise RequestDone
 
 def posthours(component, req, user, tid):
+	'''Associate the hours someone worked with a ticket.'''
 	f = "posthours"
 	if req.method != 'GET':
 		error(req, "%s: expected a GET" % f)
@@ -67,18 +71,69 @@ def posthours(component, req, user, tid):
 		efmt = "%s: ticket %s doesn't have actualhours custom field"
 		error(req, efmt % (f, tid))
 
-	val = float(row[0])
-	newval = val + float(req.args['data'])
-	component.log.debug("%s: setting actualhours to %.2f for ticket %s" % (f, newval, tid))
+	oldval = float(row[0])
+	delta = float(req.args['data'])
+	newval = oldval + delta
+	if newval < 0:
+		efmt = "%s: can't end up with negative hours, task only has %s hours"
+		error(req, efmt % (f, oldval))
+	fmt = "%s: %s logged %.4f hours to ticket %s (new total=%s)"
+	component.log.info(fmt % (f, user, delta, tid, newval))
 
-	sql = "UPDATE ticket_custom SET value = %s " \
-	    + "WHERE ticket=%s AND name='actualhours'"
-	cursor.execute(sql, (newval, tid))
-	db.commit()
+	# if any exceptions, rollback everything
+	ok = True
+	try:
+		sql = "UPDATE ticket_custom SET value = %s " \
+		    + "WHERE ticket=%s AND name='actualhours'"
+		params = (newval, tid)
+		cursor.execute(sql, params)
 
-	data="OK"
-	req.send_response(200)
-	req.send_header('Content-Type', 'plain/text')
-	req.send_header('Content-Length', len(data))
-	req.write(data)
-	raise RequestDone
+		# Trac stores every ticket field change as a comment.
+		# While I don't see where the comment text is that Trac
+		# renders, I know it is not stored in the ticket_change
+		# table.  However, Trac does enter a comment record, so
+		# I'll mimic that behavior here.  
+		sql = "SELECT max(oldvalue) FROM ticket_change " \
+		    + "WHERE ticket = %s AND field = 'comment'"
+		params = (tid, )
+		cursor.execute(sql, params)
+		row = cursor.fetchone()
+		col_n = 0
+		if row:
+			col_n = int(row[0])
+		col_n += 1
+
+		dt = int(time.mktime(time.localtime()))
+		sql = "INSERT INTO ticket_change ( " \
+		    + "ticket, time, author, field, oldvalue, newvalue" \
+		    + ") VALUES ( " \
+		    + "%s, %s, %s, %s, %s, %s" \
+		    + ")"
+		params = (tid, dt, user, 'actualhours', oldval, newval)
+		cursor.execute(sql, params)
+
+		sql = "INSERT INTO ticket_change ( " \
+		    + "ticket, time, author, field, oldvalue, newvalue" \
+		    + ") VALUES ( " \
+		    + "%s, %s, %s, %s, %s, %s" \
+		    + ")"
+		params = (tid, dt, user, 'comment', col_n, '')
+		cursor.execute(sql, params)
+
+		db.commit()
+	except Exception, e:
+		db.rollback()
+		efmt = "%s: %s, sql=%s, params=%s"
+		component.log.error(efmt % (f, e, sql, params))
+		ok = False
+
+	if ok:
+		data="OK"
+		req.send_response(200)
+		req.send_header('Content-Type', 'plain/text')
+		req.send_header('Content-Length', len(data))
+		req.write(data)
+		raise RequestDone
+	else:
+		error(req, "Internal error.")
+

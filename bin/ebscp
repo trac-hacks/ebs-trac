@@ -1,0 +1,30 @@
+#! /bin/sh -e
+#
+# POST data to Trac.
+#
+
+
+usage="$0 <data> <url>"
+[ "x$1" = "x" ] && echo $usage > "/dev/stderr" && exit 1
+[ "x$2" = "x" ] && echo $usage > "/dev/stderr" && exit 1
+
+data=$1
+url=$2
+
+. ~/.ebsconf
+
+safedata=$(python -c "import urllib; print urllib.quote('''$data''')")
+
+u=$protocol://$host/$urlprefix/$url?data=$safedata
+echo "$u:" 
+
+#
+# I couldn't figure out how to get around the __FORM_TOKEN
+# cross-site scripting protection in Trac, so just urlencode
+# and send as query parameter.
+#
+
+
+# -k option because my SSL cert is self-signed, old, for wrong domain.
+
+curl -k --user $user:$pass $u
