@@ -32,7 +32,8 @@ class EBSComponent(Component):
 
 		a = req.path_info.split('/')
 
-		# /ebs/mark/tickets --> a[1]='ebs', a[2]='mark', ...
+		# /ebs/mark/tickets 
+		#	('', 'ebs', 'mark', 'tickets')
 		# if trailing slash, len() == 5.
 		if len(a) in (4,5) and a[3] == 'tickets':
 			user = a[2]
