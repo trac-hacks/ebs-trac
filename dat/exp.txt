@@ -1,13 +1,18 @@
-# task id, estimated minutes, and title (tab-delimited)
-1	45	Learn how to create a Trac plugin.
-2	30	ebsls /ebs/mark/tickets/
-3	60	Install plugin that enables ebsls /ebs/mark/tickets
-4	60	ebscp 1.5  /ebs/mark/ticket/1/hours
-5	30	Update plugin install with new ebscp command.
-6	60	ebsls /ebs/mark/timecard/07-2010/1-15
-7	30	stop.sh
-8	30	Implement ebsls as shell script that uses cURL.
-9	60	Write manual pages.
-10	30	Write install-client target (scripts, ~/.ebstrac, and manual)
-11	60	ebsls log
-12	45	Allow user to specify date other than today for hours.
+# X (for closed), task id, estimated minutes, and title (tab-delimited)
+X	1	45	Learn how to create a Trac plugin.
+X	2	30	ebsls /ebs/mark/tickets/
+X	3	60	Install plugin that enables ebsls /ebs/mark/tickets
+X	4	60	ebscp 1.5  /ebs/mark/ticket/1/hours
+X	5	30	Update plugin install with new ebscp command.
+X	6	60	ebsls /ebs/mark/timecard/07-2010/1-15
+X	7	30	stop.sh
+X	8	30	Implement ebsls as shell script that uses cURL.
+X	9	60	Write manual pages.
+X	10	30	Write install-client Makefile target
+X	11	60	ebsls log
+X	12	45	Allow user to specify date other than today for hours.
+	13	60	ebsls fulltickets
+	14	15	BUGS man page: log doesn't respect prior dates
+	15	45	ebscp closed ticket/1/status
+	16	30	Only allow people to modify tickets they own.
+	17	60	Refactor: use list of (testfcn,handlerfcn) tuples.
