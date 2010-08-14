@@ -60,13 +60,14 @@ NR == $n {
 		delta = 0
 	else if (h1 > h0)
 		delta = (h1 - h0) * 60
-	else
+	else {
 		print "I assume you just worked past midnight ..." >> "/dev/stderr"
 		delta = (h1 + 24 - h0) * 60
+	}
 	delta = delta + (m1 - m0)
 	if (s1 - s0 > 30)
 		delta = delta + 1
-	else if (s1 - s0 < -30) {
+	else if (s1 - s0 < -30) { 
 		# don't round down to zero minutes
 		if (delta > 1)
 			delta = delta - 1
