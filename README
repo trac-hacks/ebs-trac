@@ -1,7 +1,7 @@
 A plug-in that enables evidence-based scheduling in Trac.
 
 	Created: Thu Aug 12 15:47:00 EDT 2010
-	Status : Just starting out.
+	Status : Testing time logging.
 
 
 CONTENTS
@@ -41,7 +41,7 @@ INSTALLING THE PLUGIN
 		estimatedhours.order = 1
 		estimatedhours.value = 0
 		actualhours = text
-		actualhours.label = Actual Ticket
+		actualhours.label = Actual Hours
 		actualhours.order = 2
 		actualhours.value = 0
 		...
@@ -55,6 +55,7 @@ INSTALLING THE CLIENT
 	To install the client utilities and their man pages, type:
 
 		$ sudo make install-client
+		$ man ebsconf
 	
 
 
@@ -71,3 +72,6 @@ FILES IN THIS PROJECT
 
 	./py/
 		Python sources.
+
+	./bin/
+		Shell scripts.
