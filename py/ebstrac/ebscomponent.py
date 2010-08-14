@@ -36,7 +36,15 @@ class EBSComponent(Component):
 		# if trailing slash, len() == 5.
 		if len(a) in (4,5) and a[3] == 'tickets':
 			user = a[2]
-			ebstrac.handlers.ticketget(self.env, req, user)
+			ebstrac.handlers.gettickets(self.env, req, user)
+
+		# /ebs/mark/log
+		#	('', 'ebs', 'mark', 'log')
+		# /ebs/mark/log/
+		#	('', 'ebs', 'mark', 'log', '')
+		if len(a) in (4,5) and a[3] == 'log':
+			user = a[2]
+			ebstrac.handlers.getlog(self.env, req, user)
 
 		# /ebs/mark/ticket/1/hours
 		#    ('', 'ebs', 'mark', 'ticket', '1', 'hours')

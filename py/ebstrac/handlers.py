@@ -30,9 +30,9 @@ def error(req, data):
 	req.write(data)
 	raise RequestDone
 
-def ticketget(env, req, user):
+def gettickets(env, req, user):
 	'''Lookup all open (status != closed) tickets for a user.'''
-	f = "ticketget"
+	f = "gettickets"
 	if req.method != 'GET':
 		error(req, "%s: expected a GET" % f)
 	
@@ -47,6 +47,50 @@ def ticketget(env, req, user):
 		tid = row[0]
 		tnm = row[1]
 		a.append("%6d  %s" % (tid, tnm))
+	a.append("\n")
+	data = "\n".join(a)
+	req.send_response(200)
+	req.send_header('Content-Type', 'plain/text')
+	req.send_header('Content-Length', len(data))
+	req.write(data)
+	raise RequestDone
+
+def getlog(env, req, user):
+	'''Lookup all hours logged by user against all tickets.'''
+	f = "getlog"
+	if req.method != 'GET':
+		error(req, "%s: expected a GET" % f)
+	
+	db = env.get_db_cnx()
+	cursor = db.cursor()
+	sql = "SELECT ticket, time, oldvalue, newvalue " \
+  	    + "FROM ticket_change " \
+	    + "WHERE author = %s " \
+	    + "AND field = 'actualhours' " \
+	    + "ORDER BY time"
+	cursor.execute(sql, (user,))
+
+	a = []
+	sum = 0
+	for row in cursor.fetchall():
+		tid = row[0]
+		local_epoch_seconds = row[1]
+		v0 = float(row[2])
+		v1 = float(row[3])
+		hours = v1 - v0
+		tm = time.localtime(local_epoch_seconds)
+		a.append("%d\t%04d-%02d-%02d %02d:%02d\t%.3f" % (\
+		    tid, 
+		    tm[0],
+		    tm[1],
+		    tm[2],
+		    tm[3],
+		    tm[4],
+		    hours
+		    )
+		)
+		sum += hours
+	a.append("total = %.3f" % (sum,))
 	a.append("\n")
 	data = "\n".join(a)
 	req.send_response(200)
