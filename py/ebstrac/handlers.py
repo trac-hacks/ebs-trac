@@ -16,7 +16,9 @@
 # 
 
 from trac.core import *
-from trac.web.main import IRequestHandler
+from trac.web.main import \
+	IRequestHandler, \
+	RequestDone
 
 def error(req, data):
 	req.send_response(400)
@@ -24,11 +26,12 @@ def error(req, data):
 	req.send_header('Content-Length', len(data))
 	req._send_cookie_headers()
 	req.write(data)
+	raise RequestDone
 
 def ticketget(env, req, user):
 	f = "ticketget"
 	if req.method != 'GET':
-		return handlers.error(req, "%s: expected a GET" % f)
+		error(req, "%s: expected a GET" % f)
 	
 	db = env.get_db_cnx()
 	cursor = db.cursor()
@@ -46,5 +49,36 @@ def ticketget(env, req, user):
 	req.send_response(200)
 	req.send_header('Content-Type', 'plain/text')
 	req.send_header('Content-Length', len(data))
-	#req._send_cookie_headers()
 	req.write(data)
+	raise RequestDone
+
+def posthours(component, req, user, tid):
+	f = "posthours"
+	if req.method != 'GET':
+		error(req, "%s: expected a GET" % f)
+
+	db = component.env.get_db_cnx()
+	cursor = db.cursor()
+	sql = "SELECT value FROM ticket_custom " \
+	    + "WHERE name = 'actualhours' AND ticket = %s"
+	cursor.execute(sql, (tid,))
+	row = cursor.fetchone()
+	if not row:
+		efmt = "%s: ticket %s doesn't have actualhours custom field"
+		error(req, efmt % (f, tid))
+
+	val = float(row[0])
+	newval = val + float(req.args['data'])
+	component.log.debug("%s: setting actualhours to %.2f for ticket %s" % (f, newval, tid))
+
+	sql = "UPDATE ticket_custom SET value = %s " \
+	    + "WHERE ticket=%s AND name='actualhours'"
+	cursor.execute(sql, (newval, tid))
+	db.commit()
+
+	data="OK"
+	req.send_response(200)
+	req.send_header('Content-Type', 'plain/text')
+	req.send_header('Content-Length', len(data))
+	req.write(data)
+	raise RequestDone

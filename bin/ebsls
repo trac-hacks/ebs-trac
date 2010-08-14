@@ -17,7 +17,8 @@ url=$1
 
 . ~/.ebsconf
 
-# -k option, b/c my SSL cert is self-signed, old, for wrong domain.
 u=$protocol://$host/$urlprefix/$url
 echo "$u:" 
+
+# -k option because my SSL cert is self-signed, old, for wrong domain.
 curl -k --user $user:$pass $u

@@ -28,13 +28,24 @@ class EBSComponent(Component):
 
 	def process_request(self, req):
 
-		#self.log.debug("PATH_INFO: %s" % (req.path_info,))
+		self.log.debug("PATH_INFO: %s" % (req.path_info,))
+
+		a = req.path_info.split('/')
 
 		# /ebs/mark/tickets --> a[1]='ebs', a[2]='mark', ...
 		# if trailing slash, len() == 5.
-		a = req.path_info.split('/')
 		if len(a) in (4,5) and a[3] == 'tickets':
 			user = a[2]
 			ebstrac.handlers.ticketget(self.env, req, user)
+
+		# /ebs/mark/ticket/1/hours
+		#    ('', 'ebs', 'mark', 'ticket', '1', 'hours')
+		# /ebs/mark/ticket/1/hours/
+		#    ('', 'ebs', 'mark', 'ticket', '1', 'hours', '')
+		elif len(a) in (6,7) and a[3] == 'ticket' and a[5] == 'hours':
+			user = a[2]
+			tid = a[4]
+			ebstrac.handlers.posthours(self, req, user, tid)
+
 		else:
 			ebstrac.handlers.error(req, "invalid url")
