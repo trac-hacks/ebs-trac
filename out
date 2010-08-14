@@ -44,18 +44,24 @@ NR == $n {
 	dt = \$3
 	t0 = \$4
 	t1 = "$tm"
+
 	split(t0, a0, ":")
 	split(t1, a1, ":")
+
 	h0 = a0[1]
 	m0 = a0[2]
 	s0 = a0[3]
+
 	h1 = a1[1]
 	m1 = a1[2]
 	s1 = a1[3]
-	if (h1 > h0)
+
+	if (h1 == h0)
+		delta = 0
+	else if (h1 > h0)
 		delta = (h1 - h0) * 60
 	else
-		# assume working past midnight
+		print "I assume you just worked past midnight ..." >> "/dev/stderr"
 		delta = (h1 + 24 - h0) * 60
 	delta = delta + (m1 - m0)
 	if (s1 - s0 > 30)
