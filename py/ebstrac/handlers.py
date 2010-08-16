@@ -56,14 +56,17 @@ def pathinfouser_must_equal_remoteuser(req, user):
 		error(req, "no REMOTE_USER in environment, can't validate request.")
 
 	if user is None:
-		error(req, "%s: user is None" % (f.))
+		error(req, "%s: user is None" % (f,))
 	
 	u1 = req.remote_user()
 	if u1 != user:
 		error(req, "User name mismatch ('%s' != '%s')." % (u1, user))
 
 def is_tickets(req):
-	'''/ebs/mark/tickets or /ebs/mark/tickets/'''
+	'''
+		/ebs/mark/tickets 
+		/ebs/mark/tickets/
+	'''
 	a = req.path_info.strip('/').split('/')
 	return len(a) == 3 and a[2] == 'tickets'
 
@@ -96,9 +99,12 @@ def gettickets(com, req):
 	raise RequestDone
 
 def is_fulltickets(req):
-	'''/ebs/mark/fulltickets or /ebs/mark/fulltickets/'''
+	'''
+		/ebs/mark/fulltickets 
+		/ebs/mark/fulltickets/
+	'''
 	a = req.path_info.strip('/').split('/')
-	return len(a) == 3 and a[2] == 'fulltickets'
+	return  len(a) == 3 and a[2] == 'fulltickets'
 
 def getfulltickets(com, req):
 	'''Lookup all open (status != closed) tickets for a user.'''
@@ -111,25 +117,41 @@ def getfulltickets(com, req):
 
 	db = com.env.get_db_cnx()
 	cursor = db.cursor()
-	sql = "SELECT t.id, t.summary, t.status, t.description, a.value as act, e.value as exp " \
-	    + "FROM ticket t, " \
-	    + "(SELECT value FROM ticket_custom " \
-	    + "    WHERE name = 'actualhours' AND ticket = %s) a,"
-	    + "(SELECT value FROM ticket_custom " \
-	    + "    WHERE name = 'estimatedhours' AND ticket = %s) e" \
-	    + "WHERE t.id = %s"
-	cursor.execute(sql, (tid, tid, tid))
+
+	sql = "SELECT id, summary, status, description " \
+	    + "FROM ticket " \
+	    + "WHERE owner = %s AND status != 'closed' " \
+	    + "ORDER BY id"
+	cursor.execute(sql, (user,))
+
+	# XXX: not sure if I can reuse a cursor I am scanning.  (i suspect not.)
+	c1 = db.cursor()
+	sqlact = "SELECT value FROM ticket_custom " \
+	    + "WHERE name = 'actualhours' AND ticket = %s"
+	sqlest = "SELECT value FROM ticket_custom " \
+	    + "WHERE name = 'estimatedhours' AND ticket = %s"
 
 	a = []
-	for (id, summary, status, desc, act, exp) in cursor.fetchall():
-		fmt = "id      : %s\n" \
+	for (id, summary, status, desc) in cursor.fetchall():
+		c1.execute(sqlact, (id,))
+		act = 0
+		row = c1.fetchone()
+		if row: 
+			act = row[0]
+		c1.execute(sqlest, (id,))
+		est = 0
+		row = c1.fetchone()
+		if row: 
+			est = row[0]
+		fmt = "-----------------------------------------------------------------\n" \
+		    + "id      : %s\n" \
 		    + "summary : %s\n" \
 		    + "estimate: %s\n" \
 		    + "actual  : %s\n" \
 		    + "status  : %s\n" \
 		    + "-----------------------------------------------------------------\n" \
-		    + "%s\n" \
-		a.append(fmt % (id, summary, est, act, status, desc)
+		    + "%s\n"
+		a.append(fmt % (id, summary, est, act, status, desc))
 	a.append("\n")
 	data = "\n".join(a)
 	req.send_response(200)
@@ -144,10 +166,11 @@ def is_log(req):
 		/ebs/mark/log/
 	'''
 	a = req.path_info.strip('/').split('/')
-	return len(a) == 3 and a[2] == 'log':
+	return len(a) == 3 and a[2] == 'log'
 
 def getlog(com, req):
 	'''Lookup all hours logged by user against all tickets.'''
+	raise ValueError("MKB")
 	f = "getlog"
 	if req.method != 'GET':
 		error(req, "%s: expected a GET" % f)
@@ -196,15 +219,16 @@ def getlog(com, req):
 
 def is_hours(req):
 	'''
-	 /ebs/mark/ticket/1/hours
-	 /ebs/mark/ticket/1/hours/
-	 /ebs/mark/ticket/1/hours/2010-08-14
-	 /ebs/mark/ticket/1/hours/2010-08-14/
+		 /ebs/mark/ticket/1/hours
+		 /ebs/mark/ticket/1/hours/
+		 /ebs/mark/ticket/1/hours/2010-08-14
+		 /ebs/mark/ticket/1/hours/2010-08-14/
 	'''
 	a = req.path_info.strip('/').split('/')
-	return len(a) in (5, 6) and a[2] == 'ticket' and a[4] == 'hours':
+	return len(a) in (5, 6) and a[2] == 'ticket' and a[4] == 'hours'
 
 def posthours(com, req):
+	raise ValueError("MKB")
 	'''Associate the hours someone worked with a ticket.'''
 	f = "posthours"
 	if req.method != 'GET':
@@ -324,6 +348,7 @@ def is_estimate(req):
 	return len(a) == 5 and a[2] == 'ticket' and a[4] == 'estimate'
 
 def postestimate(com, req):
+	raise ValueError("MKB")
 	'''Associate an estimate with a ticket.'''
 	f = "postestimate"
 	if req.method != 'GET':
@@ -418,13 +443,14 @@ def postestimate(com, req):
 
 def is_status(req):
 	'''
-	 /ebs/mark/ticket/1/status
-	 /ebs/mark/ticket/1/status/
+		 /ebs/mark/ticket/1/status
+		 /ebs/mark/ticket/1/status/
 	'''
 	a = req.path_info.strip('/').split('/')
-	return len(a) == 5 and a[2] == 'ticket' and a[4] == 'status':
+	return len(a) == 5 and a[2] == 'ticket' and a[4] == 'status'
 
 def poststatus(com, req):
+	raise ValueError("MKB")
 	'''Change a ticket's status.'''
 	f = "poststatus"
 	if req.method != 'GET':

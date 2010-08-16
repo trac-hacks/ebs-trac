@@ -21,4 +21,4 @@ u=$protocol://$host/$urlprefix/$url
 echo "$u:" 
 
 # -k option because my SSL cert is self-signed, old, for wrong domain.
-curl -k --user $user:$pass $u
+curl -s -k --user $user:$pass $u

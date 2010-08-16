@@ -28,8 +28,9 @@ class EBSComponent(Component):
 	def __init__(self):
 		'''register handlers'''
 		h = ebstrac.handlers
-		self.handers = (
+		self.handlers = (
 		    (h.is_tickets, h.gettickets),
+		    (h.is_fulltickets, h.getfulltickets),
 		    (h.is_log, h.getlog),
 		    (h.is_hours, h.posthours),
 		    (h.is_estimate, h.postestimate),
@@ -44,7 +45,9 @@ class EBSComponent(Component):
 		self.log.debug("PATH_INFO: %s" % (req.path_info,))
 
 		for testfcn, handlerfcn in self.handlers:
-			if testfcn(req):
+			rval = testfcn(req)
+			#self.log.debug("%s: %s" % (testfcn.__doc__, rval))
+			if rval:
 				handlerfcn(self, req)
 
 		# Handlers raise a ResponseDone when done, so we only get
