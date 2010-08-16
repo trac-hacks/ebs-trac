@@ -17,4 +17,4 @@ X	15	45	ebscp closed ticket/1/status
 X	16	30	Only allow people to modify tickets they own.
 X	17	60	Refactor: use list of (testfcn,handlerfcn) tuples.
 X	18	60	Require user in URL matches authenticated user.
-	19	30	Test the last few tasks added.
+X	19	30	Test the last few tasks added.
