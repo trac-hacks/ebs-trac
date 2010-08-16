@@ -38,7 +38,9 @@ The supported resources are listed below.
 .Pp
 One row for each ticket owned by your Trac user, as defined in 
 .Pa ~/.ebsconf .  
-Only tickets with a status not equal to ``closed'' are listed.
+Only tickets with a status not equal to 
+.Dq closed
+are listed.
 Each row has the following space-delimited columns:
 .Pp
 .Bl -enum -offset indent -compact
@@ -47,6 +49,11 @@ ticket id
 .It 
 ticket summary
 .El
+.Ss fulltickets
+.Pp
+The id, summary, expected hours, actual hours, status and description
+are printed out for each ticket you own that has a status other than
+.Dq closed .
 .Ss log
 .Pp
 One row for time you posted time to a ticket.

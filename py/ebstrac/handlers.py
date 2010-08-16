@@ -32,11 +32,6 @@ def error(req, data):
 
 # XXX: refactor this into a handlers sub-package; e.g., handers/tickets.py
 
-def is_tickets(req):
-	'''/ebs/mark/tickets or /ebs/mark/tickets/'''
-	a = req.path_info.strip('/').split('/')
-	return len(a) == 3 and a[2] == 'tickets'
-
 def user_must_own_ticket(req, cursor, tid, user):
 	'''Return True or False.'''
 	sql = "SELECT owner FROM ticket WHERE id = %s"
@@ -67,6 +62,11 @@ def pathinfouser_must_equal_remoteuser(req, user):
 	if u1 != user:
 		error(req, "User name mismatch ('%s' != '%s')." % (u1, user))
 
+def is_tickets(req):
+	'''/ebs/mark/tickets or /ebs/mark/tickets/'''
+	a = req.path_info.strip('/').split('/')
+	return len(a) == 3 and a[2] == 'tickets'
+
 def gettickets(com, req):
 	'''Lookup all open (status != closed) tickets for a user.'''
 	f = "gettickets"
@@ -87,6 +87,49 @@ def gettickets(com, req):
 		tid = row[0]
 		tnm = row[1]
 		a.append("%6d  %s" % (tid, tnm))
+	a.append("\n")
+	data = "\n".join(a)
+	req.send_response(200)
+	req.send_header('Content-Type', 'plain/text')
+	req.send_header('Content-Length', len(data))
+	req.write(data)
+	raise RequestDone
+
+def is_fulltickets(req):
+	'''/ebs/mark/fulltickets or /ebs/mark/fulltickets/'''
+	a = req.path_info.strip('/').split('/')
+	return len(a) == 3 and a[2] == 'fulltickets'
+
+def getfulltickets(com, req):
+	'''Lookup all open (status != closed) tickets for a user.'''
+	f = "getfulltickets"
+	if req.method != 'GET':
+		error(req, "%s: expected a GET" % f)
+	
+	a = req.path_info.strip('/').split('/')
+	user = a[1]
+
+	db = com.env.get_db_cnx()
+	cursor = db.cursor()
+	sql = "SELECT t.id, t.summary, t.status, t.description, a.value as act, e.value as exp " \
+	    + "FROM ticket t, " \
+	    + "(SELECT value FROM ticket_custom " \
+	    + "    WHERE name = 'actualhours' AND ticket = %s) a,"
+	    + "(SELECT value FROM ticket_custom " \
+	    + "    WHERE name = 'estimatedhours' AND ticket = %s) e" \
+	    + "WHERE t.id = %s"
+	cursor.execute(sql, (tid, tid, tid))
+
+	a = []
+	for (id, summary, status, desc, act, exp) in cursor.fetchall():
+		fmt = "id      : %s\n" \
+		    + "summary : %s\n" \
+		    + "estimate: %s\n" \
+		    + "actual  : %s\n" \
+		    + "status  : %s\n" \
+		    + "-----------------------------------------------------------------\n" \
+		    + "%s\n" \
+		a.append(fmt % (id, summary, est, act, status, desc)
 	a.append("\n")
 	data = "\n".join(a)
 	req.send_response(200)
