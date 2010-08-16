@@ -37,6 +37,18 @@ def is_tickets(req):
 	a = req.path_info.strip('/').split('/')
 	return len(a) == 3 and a[2] == 'tickets'
 
+def user_must_own_ticket(req, cursor, tid, user):
+	'''Return True or False.'''
+	sql = "SELECT owner FROM ticket WHERE id = %s"
+	cursor.execute(sql, (tid,))
+	row = cursor.fetchone()
+	if not row:
+		efmt = "ticket %s not found."
+		error(req, efmt % (tid,))
+	if row[0] != user:
+		efmt = "ticket %s not owned by %s."
+		error(req, efmt % (tid, user))
+
 def gettickets(com, req):
 	'''Lookup all open (status != closed) tickets for a user.'''
 	f = "gettickets"
@@ -146,6 +158,9 @@ def posthours(com, req):
 
 	db = com.env.get_db_cnx()
 	cursor = db.cursor()
+
+	user_must_own_ticket(req, cursor, tid, user)
+
 	sql = "SELECT value FROM ticket_custom " \
 	    + "WHERE name = 'actualhours' AND ticket = %s"
 	cursor.execute(sql, (tid,))
@@ -257,6 +272,9 @@ def postestimate(com, req):
 
 	db = com.env.get_db_cnx()
 	cursor = db.cursor()
+
+	user_must_own_ticket(req, cursor, tid, user)
+
 	sql = "SELECT value FROM ticket_custom " \
 	    + "WHERE name = 'estimatedhours' AND ticket = %s"
 	cursor.execute(sql, (tid,))
