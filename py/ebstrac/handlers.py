@@ -1,4 +1,4 @@
-# Respond to HTTP requests.
+# Various responses to an HTTP request.
 #
 # Copyright (c) 2010, Mark Bucciarelli <mark@crosscutmedia.com>
 # 
@@ -30,13 +30,23 @@ def error(req, data):
 	req.write(data)
 	raise RequestDone
 
-def gettickets(env, req, user):
+# XXX: refactor this into a handlers sub-package; e.g., handers/tickets.py
+
+def is_tickets(req):
+	'''/ebs/mark/tickets or /ebs/mark/tickets/'''
+	a = req.path_info.strip('/').split('/')
+	return len(a) == 3 and a[2] == 'tickets'
+
+def gettickets(com, req):
 	'''Lookup all open (status != closed) tickets for a user.'''
 	f = "gettickets"
 	if req.method != 'GET':
 		error(req, "%s: expected a GET" % f)
 	
-	db = env.get_db_cnx()
+	a = req.path_info.strip('/').split('/')
+	user = a[1]
+
+	db = com.env.get_db_cnx()
 	cursor = db.cursor()
 	sql = "SELECT id, summary FROM ticket WHERE owner = %s " \
 	    + "AND status != 'closed' ORDER BY id"
@@ -55,13 +65,24 @@ def gettickets(env, req, user):
 	req.write(data)
 	raise RequestDone
 
-def getlog(env, req, user):
+def is_log(req):
+	'''
+		/ebs/mark/log
+		/ebs/mark/log/
+	'''
+	a = req.path_info.strip('/').split('/')
+	return len(a) == 3 and a[2] == 'log':
+
+def getlog(com, req):
 	'''Lookup all hours logged by user against all tickets.'''
 	f = "getlog"
 	if req.method != 'GET':
 		error(req, "%s: expected a GET" % f)
 	
-	db = env.get_db_cnx()
+	a = req.path_info.strip('/').split('/')
+	user = a[1]
+
+	db = com.env.get_db_cnx()
 	cursor = db.cursor()
 	sql = "SELECT ticket, time, oldvalue, newvalue " \
   	    + "FROM ticket_change " \
@@ -99,13 +120,31 @@ def getlog(env, req, user):
 	req.write(data)
 	raise RequestDone
 
-def posthours(component, req, user, tid, dt):
+
+def is_hours(req):
+	'''
+	 /ebs/mark/ticket/1/hours
+	 /ebs/mark/ticket/1/hours/
+	 /ebs/mark/ticket/1/hours/2010-08-14
+	 /ebs/mark/ticket/1/hours/2010-08-14/
+	'''
+	a = req.path_info.strip('/').split('/')
+	return len(a) in (5, 6) and a[2] == 'ticket' and a[4] == 'hours':
+
+def posthours(com, req):
 	'''Associate the hours someone worked with a ticket.'''
 	f = "posthours"
 	if req.method != 'GET':
 		error(req, "%s: expected a GET" % f)
 
-	db = component.env.get_db_cnx()
+	a = req.path_info.strip('/').split('/')
+	user = a[1]
+	tid = a[3]
+	dt = None
+	if len(a) > 5:
+		dt = a[5]
+
+	db = com.env.get_db_cnx()
 	cursor = db.cursor()
 	sql = "SELECT value FROM ticket_custom " \
 	    + "WHERE name = 'actualhours' AND ticket = %s"
@@ -119,10 +158,11 @@ def posthours(component, req, user, tid, dt):
 	delta = float(req.args['data'])
 	newval = oldval + delta
 	if newval < 0:
-		efmt = "%s: can't end up with negative hours, task only has %s hours"
+		efmt = "%s: can't end up with negative hours, " \
+		    + "task only has %s hours"
 		error(req, efmt % (f, oldval))
 	fmt = "%s: %s logging %.4f hours to ticket %s (new total=%s)"
-	component.log.info(fmt % (f, user, delta, tid, newval))
+	com.log.info(fmt % (f, user, delta, tid, newval))
 
 	#
 	# Don't allow time to be booked until an estimate has been made.
@@ -184,7 +224,7 @@ def posthours(component, req, user, tid, dt):
 	except Exception, e:
 		db.rollback()
 		efmt = "%s: %s, sql=%s, params=%s"
-		component.log.error(efmt % (f, e, sql, params))
+		com.log.error(efmt % (f, e, sql, params))
 		ok = False
 
 	if ok:
@@ -197,13 +237,25 @@ def posthours(component, req, user, tid, dt):
 	else:
 		error(req, "Internal error.")
 
-def postestimate(component, req, user, tid):
+def is_estimate(req):
+	'''
+		/ebs/mark/ticket/1/estimate
+		/ebs/mark/ticket/1/estimate/
+	'''
+	a = req.path_info.strip('/').split('/')
+	return len(a) == 5 and a[2] == 'ticket' and a[4] == 'estimate'
+
+def postestimate(com, req):
 	'''Associate an estimate with a ticket.'''
 	f = "postestimate"
 	if req.method != 'GET':
 		error(req, "%s: expected a GET" % f)
 
-	db = component.env.get_db_cnx()
+	a = req.path_info.strip('/').split('/')
+	user = a[1]
+	tid = a[3]
+
+	db = com.env.get_db_cnx()
 	cursor = db.cursor()
 	sql = "SELECT value FROM ticket_custom " \
 	    + "WHERE name = 'estimatedhours' AND ticket = %s"
@@ -221,7 +273,7 @@ def postestimate(component, req, user, tid):
 		efmt = "%s: can't have a negative estimate"
 		error(req, efmt % (f, ))
 	fmt = "%s: %s set estimate to %.4f hours for ticket %s (was %.4f)"
-	component.log.info(fmt % (f, user, newval, tid, oldval))
+	com.log.info(fmt % (f, user, newval, tid, oldval))
 
 	# if any exceptions, rollback everything
 	ok = True
@@ -267,7 +319,7 @@ def postestimate(component, req, user, tid):
 	except Exception, e:
 		db.rollback()
 		efmt = "%s: %s, sql=%s, params=%s"
-		component.log.error(efmt % (f, e, sql, params))
+		com.log.error(efmt % (f, e, sql, params))
 		ok = False
 
 	if ok:

@@ -25,6 +25,16 @@ import ebstrac
 class EBSComponent(Component):
 	implements(IRequestHandler)
 
+	def __init__(self):
+		'''register handlers'''
+		h = ebstrac.handlers
+		self.handers = (
+		    (h.is_tickets, h.gettickets),
+		    (h.is_log, h.getlog),
+		    (h.is_hours, h.posthours),
+		    (h.is_estimate, h.postestimate),
+		)
+	
 	def match_request(self, req):
 		return req.path_info.startswith('/ebs/')
 
@@ -32,47 +42,12 @@ class EBSComponent(Component):
 
 		self.log.debug("PATH_INFO: %s" % (req.path_info,))
 
-		a = req.path_info.split('/')
+		for testfcn, handlerfcn in self.handlers:
+			if testfcn(req):
+				handlerfcn(self, req)
 
-		# /ebs/mark/tickets 
-		#	('', 'ebs', 'mark', 'tickets')
-		# if trailing slash, len() == 5.
-		if len(a) in (4,5) and a[3] == 'tickets':
-			user = a[2]
-			ebstrac.handlers.gettickets(self.env, req, user)
+		# Handlers raise a ResponseDone when done, so we only get
+		# here if the request was not matched with a registered
+		# handler.
 
-		# /ebs/mark/log
-		#	('', 'ebs', 'mark', 'log')
-		# /ebs/mark/log/
-		#	('', 'ebs', 'mark', 'log', '')
-		if len(a) in (4,5) and a[3] == 'log':
-			user = a[2]
-			ebstrac.handlers.getlog(self.env, req, user)
-
-		# /ebs/mark/ticket/1/hours
-		#    ('', 'ebs', 'mark', 'ticket', '1', 'hours')
-		# /ebs/mark/ticket/1/hours/
-		#    ('', 'ebs', 'mark', 'ticket', '1', 'hours', '')
-		# /ebs/mark/ticket/1/hours/2010-08-14/
-		#    ('', 'ebs', 'mark', 'ticket', '1', 'hours', '2010-08-14', '')
-		elif len(a) in (6,7,8) and a[3] == 'ticket' and a[5] == 'hours':
-			user = a[2]
-			tid = a[4]
-			dt = None
-			if len(a) > 6:
-				p = re.compile('\d{4}-\d{2}-\d{2}')	
-				if p.match(a[6]):
-					dt = a[6]
-			ebstrac.handlers.posthours(self, req, user, tid, dt)
-
-		# /ebs/mark/ticket/1/estimate
-		#    ('', 'ebs', 'mark', 'ticket', '1', 'estimate')
-		# /ebs/mark/ticket/1/estimate/
-		#    ('', 'ebs', 'mark', 'ticket', '1', 'estimate', '')
-		elif len(a) in (6,7) and a[3] == 'ticket' and a[5] == 'estimate':
-			user = a[2]
-			tid = a[4]
-			ebstrac.handlers.postestimate(self, req, user, tid)
-
-		else:
-			ebstrac.handlers.error(req, "invalid url")
+		ebstrac.handlers.error(req, "invalid url")
