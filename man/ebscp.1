@@ -22,15 +22,17 @@
 .
 .Sh NAME
 .Nm ebscp
-.Nd post data to evidence-based scheduling resource in Trac
+.Nd copy data to a Trac resource.
 .Sh SYNOPSIS
 .Nm ebscp
 .Ar data
 .Ar resource
 .Sh DESCRIPTION
-If the POST succeeds, the output of
+Copy the given data item to the given resource.  If the POST succeeds, the output of
 .Nm
 is OK.
+.Pp
+For ticket resources, you must be the owner of the ticket.
 .Pp
 The supported resources are listed below.
 .Ss ticket/ticket_number/estimate

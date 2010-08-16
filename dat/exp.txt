@@ -16,4 +16,4 @@ X	14	15	BUGS man page: log doesn't respect prior dates
 X	15	45	ebscp closed ticket/1/status
 X	16	30	Only allow people to modify tickets they own.
 X	17	60	Refactor: use list of (testfcn,handlerfcn) tuples.
-	18	60	Require user in URL matches authenticated user.
+X	18	60	Require user in URL matches authenticated user.

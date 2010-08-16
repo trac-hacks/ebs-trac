@@ -49,6 +49,24 @@ def user_must_own_ticket(req, cursor, tid, user):
 		efmt = "ticket %s not owned by %s."
 		error(req, efmt % (tid, user))
 
+def pathinfouser_must_equal_remoteuser(req, user):
+	'''The PATH_INFO user comes from the URL of the resource.
+	The REMOTE_USER is the user that logged in during the HTTP
+	authentication.  This method returns an error page if the two
+	are not the same user.'''
+
+	f = "pathinfouser_must_equal_remoteuser"
+
+	if req.remote_user() is None:
+		error(req, "no REMOTE_USER in environment, can't validate request.")
+
+	if user is None:
+		error(req, "%s: user is None" % (f.))
+	
+	u1 = req.remote_user()
+	if u1 != user:
+		error(req, "User name mismatch ('%s' != '%s')." % (u1, user))
+
 def gettickets(com, req):
 	'''Lookup all open (status != closed) tickets for a user.'''
 	f = "gettickets"
@@ -160,6 +178,8 @@ def posthours(com, req):
 	cursor = db.cursor()
 
 	user_must_own_ticket(req, cursor, tid, user)
+
+	pathinfouser_must_equal_remoteuser(req, user)
 
 	sql = "SELECT value FROM ticket_custom " \
 	    + "WHERE name = 'actualhours' AND ticket = %s"
@@ -275,6 +295,8 @@ def postestimate(com, req):
 
 	user_must_own_ticket(req, cursor, tid, user)
 
+	pathinfouser_must_equal_remoteuser(req, user)
+
 	sql = "SELECT value FROM ticket_custom " \
 	    + "WHERE name = 'estimatedhours' AND ticket = %s"
 	cursor.execute(sql, (tid,))
@@ -373,6 +395,8 @@ def poststatus(com, req):
 	cursor = db.cursor()
 
 	user_must_own_ticket(req, cursor, tid, user)
+
+	pathinfouser_must_equal_remoteuser(req, user)
 
 	sql = "SELECT status FROM ticket WHERE id = %s"
 	cursor.execute(sql, (tid,))
