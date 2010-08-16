@@ -33,6 +33,7 @@ class EBSComponent(Component):
 		    (h.is_log, h.getlog),
 		    (h.is_hours, h.posthours),
 		    (h.is_estimate, h.postestimate),
+		    (h.is_status, h.poststatus),
 		)
 	
 	def match_request(self, req):

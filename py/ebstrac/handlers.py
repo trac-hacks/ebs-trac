@@ -349,3 +349,93 @@ def postestimate(com, req):
 		raise RequestDone
 	else:
 		error(req, "Internal error.")
+
+
+def is_status(req):
+	'''
+	 /ebs/mark/ticket/1/status
+	 /ebs/mark/ticket/1/status/
+	'''
+	a = req.path_info.strip('/').split('/')
+	return len(a) == 5 and a[2] == 'ticket' and a[4] == 'status':
+
+def poststatus(com, req):
+	'''Change a ticket's status.'''
+	f = "poststatus"
+	if req.method != 'GET':
+		error(req, "%s: expected a GET" % f)
+
+	a = req.path_info.strip('/').split('/')
+	user = a[1]
+	tid = a[3]
+
+	db = com.env.get_db_cnx()
+	cursor = db.cursor()
+
+	user_must_own_ticket(req, cursor, tid, user)
+
+	sql = "SELECT status FROM ticket WHERE id = %s"
+	cursor.execute(sql, (tid,))
+
+	oldval = row[0]
+	newval = req.args['data']
+
+	# if any exceptions, rollback everything
+	ok = True
+	try:
+		tm = int(time.mktime(time.localtime()))
+
+		sql = "UPDATE ticket SET status = %s WHERE ticket = %s"
+		params = (newval, tid)
+		cursor.execute(sql, params)
+
+		sql = "INSERT INTO ticket_change ( " \
+		    + "ticket, time, author, field, oldvalue, newvalue" \
+		    + ") VALUES ( " \
+		    + "%s, %s, %s, %s, %s, %s" \
+		    + ")"
+		params = (tid, tm, user, 'status', oldval, newval)
+		cursor.execute(sql, params)
+
+		# Trac stores every ticket field change as a comment.
+		# While I don't see where the comment text is that Trac
+		# renders, I know it is not stored in the ticket_change
+		# table.  However, Trac does enter a comment record, so
+		# I'll mimic that behavior here.  
+
+		sql = "SELECT max(oldvalue) FROM ticket_change " \
+		    + "WHERE ticket = %s AND field = 'comment'"
+		params = (tid, )
+		cursor.execute(sql, params)
+		row = cursor.fetchone()
+		col_n = 0
+		if row:
+			col_n = int(row[0])
+		col_n += 1
+
+		sql = "INSERT INTO ticket_change ( " \
+		    + "ticket, time, author, field, oldvalue, newvalue" \
+		    + ") VALUES ( " \
+		    + "%s, %s, %s, %s, %s, %s" \
+		    + ")"
+		params = [tid, tm, user, 'comment', col_n, '']
+		cursor.execute(sql, params)
+
+		db.commit()
+
+	except Exception, e:
+		db.rollback()
+		efmt = "%s: %s, sql=%s, params=%s"
+		com.log.error(efmt % (f, e, sql, params))
+		ok = False
+
+	if ok:
+		data="OK"
+		req.send_response(200)
+		req.send_header('Content-Type', 'plain/text')
+		req.send_header('Content-Length', len(data))
+		req.write(data)
+		raise RequestDone
+	else:
+		error(req, "Internal error.")
+
