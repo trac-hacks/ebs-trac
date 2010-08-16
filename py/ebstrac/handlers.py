@@ -52,13 +52,10 @@ def pathinfouser_must_equal_remoteuser(req, user):
 
 	f = "pathinfouser_must_equal_remoteuser"
 
-	if req.remote_user() is None:
-		error(req, "no REMOTE_USER in environment, can't validate request.")
-
 	if user is None:
 		error(req, "%s: user is None" % (f,))
 	
-	u1 = req.remote_user()
+	u1 = req.remote_user
 	if u1 != user:
 		error(req, "User name mismatch ('%s' != '%s')." % (u1, user))
 
@@ -170,7 +167,6 @@ def is_log(req):
 
 def getlog(com, req):
 	'''Lookup all hours logged by user against all tickets.'''
-	raise ValueError("MKB")
 	f = "getlog"
 	if req.method != 'GET':
 		error(req, "%s: expected a GET" % f)
@@ -228,7 +224,6 @@ def is_hours(req):
 	return len(a) in (5, 6) and a[2] == 'ticket' and a[4] == 'hours'
 
 def posthours(com, req):
-	raise ValueError("MKB")
 	'''Associate the hours someone worked with a ticket.'''
 	f = "posthours"
 	if req.method != 'GET':
@@ -348,7 +343,6 @@ def is_estimate(req):
 	return len(a) == 5 and a[2] == 'ticket' and a[4] == 'estimate'
 
 def postestimate(com, req):
-	raise ValueError("MKB")
 	'''Associate an estimate with a ticket.'''
 	f = "postestimate"
 	if req.method != 'GET':
@@ -450,7 +444,6 @@ def is_status(req):
 	return len(a) == 5 and a[2] == 'ticket' and a[4] == 'status'
 
 def poststatus(com, req):
-	raise ValueError("MKB")
 	'''Change a ticket's status.'''
 	f = "poststatus"
 	if req.method != 'GET':
@@ -467,19 +460,43 @@ def poststatus(com, req):
 
 	pathinfouser_must_equal_remoteuser(req, user)
 
-	sql = "SELECT status FROM ticket WHERE id = %s"
+	sql = "SELECT status, resolution FROM ticket WHERE id = %s"
 	cursor.execute(sql, (tid,))
 
+	row = cursor.fetchone()
 	oldval = row[0]
+	oldresolutionval = row[1]
 	newval = req.args['data']
 
-	# if any exceptions, rollback everything
+	# Sanity checking on status. (SQL will put in whatever we say.)
+
+	if oldval == 'closed' and newval == 'closed':
+		error(req, 'ticket already closed')
+
+	if oldval in ('new', 'reopened') and newval == 'reopened':
+		error(req, 'ticket already open')
+
+	if oldval == 'closed' and newval != 'reopened':
+		error(req, "ticket is closed, so the only valid new status " \
+		    + "is 'reopened'")
+
+	if oldval in ('new', 'reopened') and newval != 'closed':
+		error(req, "ticket is open, only valid new status is " \
+		    + "'closed'")
+
+	# If any exceptions, rollback everything.
 	ok = True
 	try:
 		tm = int(time.mktime(time.localtime()))
 
-		sql = "UPDATE ticket SET status = %s WHERE ticket = %s"
-		params = (newval, tid)
+		resolution = ''
+		if newval == 'closed':
+			resolution = 'fixed'
+
+		sql = "UPDATE ticket " \
+		    + "SET status = %s, resolution = %s "\
+		    + "WHERE id = %s"
+		params = (newval, resolution, tid)
 		cursor.execute(sql, params)
 
 		sql = "INSERT INTO ticket_change ( " \
@@ -488,6 +505,15 @@ def poststatus(com, req):
 		    + "%s, %s, %s, %s, %s, %s" \
 		    + ")"
 		params = (tid, tm, user, 'status', oldval, newval)
+		cursor.execute(sql, params)
+
+		sql = "INSERT INTO ticket_change ( " \
+		    + "ticket, time, author, field, oldvalue, newvalue" \
+		    + ") VALUES ( " \
+		    + "%s, %s, %s, %s, %s, %s" \
+		    + ")"
+		params = (tid, tm, user, 'resolution', oldresolutionval,
+		    resolution)
 		cursor.execute(sql, params)
 
 		# Trac stores every ticket field change as a comment.
