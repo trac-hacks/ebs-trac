@@ -15,4 +15,5 @@ X	12	45	Allow user to specify date other than today for hours.
 X	14	15	BUGS man page: log doesn't respect prior dates
 	15	45	ebscp closed ticket/1/status
 	16	30	Only allow people to modify tickets they own.
-	17	60	Refactor: use list of (testfcn,handlerfcn) tuples.
+X	17	60	Refactor: use list of (testfcn,handlerfcn) tuples.
+	18	60	Require user in URL matches authenticated user.
