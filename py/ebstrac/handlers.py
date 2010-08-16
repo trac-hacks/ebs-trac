@@ -293,7 +293,7 @@ def posthours(com, req):
 		cursor.execute(sql, params)
 		row = cursor.fetchone()
 		col_n = 0
-		if row:
+		if row and row[0]:
 			col_n = int(row[0])
 		col_n += 1
 
@@ -396,7 +396,7 @@ def postestimate(com, req):
 		cursor.execute(sql, params)
 		row = cursor.fetchone()
 		col_n = 0
-		if row:
+		if row and row[0]:
 			col_n = int(row[0])
 		col_n += 1
 
@@ -528,7 +528,7 @@ def poststatus(com, req):
 		cursor.execute(sql, params)
 		row = cursor.fetchone()
 		col_n = 0
-		if row:
+		if row and row[0]:
 			col_n = int(row[0])
 		col_n += 1
 
