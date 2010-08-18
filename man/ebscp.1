@@ -35,12 +35,12 @@ is OK.
 For ticket resources, you must be the owner of the ticket.
 .Pp
 The supported resources are listed below.
-.Ss ticket/ticket_number/estimate
+.Ss ticket/<ticket_number>/estimate
 .Pp
 Specify how many hours you think 
 .Ar ticket_number 
 will take.
-.Ss ticket/ticket_number/hours/[YYYY-MM-DD]
+.Ss ticket/<ticket_number>/hours/[YYYY-MM-DD]
 .Pp
 Add hours worked
 .Ar ticket_number .
@@ -49,16 +49,22 @@ use the optional
 .Ar YYYY-MM-DD
 argument.  (If you don't specify
 a date, the system defaults to using the current date.)
-.Ss ticket/ticket_number/status
+.Ss ticket/<ticket_number>/status
 .Pp
-Change a ticket's status.  For example, 
+Change a ticket's status.  Valid status values are 
 .Dq closed
-or 
+and 
 .Dq reopened .
 .Sh EXAMPLES
+.Pp
 Add 15 minutes to your total hours worked on ticket number 10.
 .Pp
 .Dl $ ebscp .25 ticket/10/hours
+.Dl OK$ 
+.Pp
+Close ticket 15.
+.Pp
+.Dl $ ebscp closed ticket/15/status
 .Dl OK$ 
 .Sh SEE ALSO
 .Xr ebsls 5
