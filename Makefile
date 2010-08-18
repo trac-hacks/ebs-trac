@@ -1,3 +1,5 @@
+MANDIR=/usr/local/share/man
+BINDIR=/usr/local/bin
 
 py/dist/ebstrac-*.egg: py/ebstrac/*.py py/setup.py
 	(cd py; python setup.py bdist_egg)
@@ -6,8 +8,6 @@ install: py/dist/ebstrac-*.egg
 	easy_install py/dist/ebstrac-*.egg
 
 
-MANDIR=/usr/local/share/man
-BINDIR=/usr/local/bin
 install-client: \
 		$(MANDIR)/man1/ebsls.1 \
 		$(MANDIR)/man1/ebscp.1 \

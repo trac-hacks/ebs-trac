@@ -6,8 +6,8 @@ A plug-in that enables evidence-based scheduling in Trac.
 
 CONTENTS
 	DEPENDENCIES
-	INSTALLING THE PLUGIN
 	INSTALLING THE CLIENT
+	INSTALLING THE PLUGIN
 	FILES IN THIS PROJECT
 
 
@@ -23,10 +23,34 @@ DEPENDENCIES
 	curl and python installed.
 
 
+INSTALLING THE CLIENT
+
+	Do this to book time and estimates to the Trac server.
+
+	First, look at the Makefile variables:
+
+		MANDIR=/usr/local/share/man
+		BINDIR=/usr/local/bin
+
+	and edit if necessary.	MANDIR is where your system reads man
+	pages from and BINDIR is where your system stores executables.
+
+	Once you have verified those variables, install the client
+	utilities and their man pages by typing:
+
+		$ sudo make install-client
+
+	To test the man pages were installed correctly, type:
+
+		$ man ebsconf
+
+
 INSTALLING THE PLUGIN
 
-	$ make
-	$ sudo make install
+	Do this on the server that hosts Trac.
+
+		$ make
+		$ sudo make install
 
 	Edit your trac conf (e.g., /usr/local/trac/conf/trac.ini)
 	to enable the ebstrac component.
@@ -49,14 +73,6 @@ INSTALLING THE PLUGIN
 	If you are running trac as a FastCGI daemon, you'll
 	have to kill then restart the daemon.	
 
-
-INSTALLING THE CLIENT
-
-	To install the client utilities and their man pages, type:
-
-		$ sudo make install-client
-		$ man ebsconf
-	
 
 
 FILES IN THIS PROJECT
