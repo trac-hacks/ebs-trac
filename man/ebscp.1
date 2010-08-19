@@ -28,32 +28,50 @@
 .Ar data
 .Ar resource
 .Sh DESCRIPTION
-Copy the given data item to the given resource.  If the POST succeeds, the output of
+Copy the given 
+.Ar data 
+to the given 
+.Ar resource .
+For example, to book time to a ticket, 
+.Ar data
+would be the number of hours you worked, and the
+.Ar resource
+would be the ticket.  (See EXAMPLES section below for a specific example.)
+.Pp
+If the copy succeeds, the output of
 .Nm
 is OK.
 .Pp
 For ticket resources, you must be the owner of the ticket.
 .Pp
-The supported resources are listed below.
+The supported resources are:
 .Ss ticket/<ticket_number>/estimate
 .Pp
-Specify how many hours you think 
-.Ar ticket_number 
-will take.
+Estimate how many hours it will take you to finish 
+.Ar ticket_number .
+.Pp
+A new estimate overwrites the previous estimate.
 .Ss ticket/<ticket_number>/hours/[YYYY-MM-DD]
 .Pp
-Add hours worked
+Book hours worked to
 .Ar ticket_number .
-If you forgot to post the hours you worked yesterday, you can 
-use the optional
+.Pp
+New hours do not overwrite previous hours, but are added to the total.
+Negative hours are allowed.
+.Pp
+In order to book hours, the ticket must have an estimate.
+.Pp
+By default, hours are booked for today.  If you want to book time that
+you worked on a previous day, use the optional
 .Ar YYYY-MM-DD
-argument.  (If you don't specify
-a date, the system defaults to using the current date.)
+argument.
 .Ss ticket/<ticket_number>/status
 .Pp
-Change a ticket's status.  Valid status values are 
+Change a ticket's status.  For this resource,
+.Ar data
+can either be 
 .Dq closed
-and 
+or 
 .Dq reopened .
 .Sh EXAMPLES
 .Pp
