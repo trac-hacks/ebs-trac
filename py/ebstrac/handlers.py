@@ -186,8 +186,8 @@ def getlog(com, req):
 
 	a = []
 	sum = 0
-	for (tid, local_epoch_seconds, oldvalue, newvalue) in cursor.fetchall():
-
+	for row in cursor.fetchall():
+		(tid, local_epoch_seconds, oldvalue, newvalue) = row
 		#
 		# After installing ebstrac plugin, when I closed old tickets
 		# they got 'actualhours' ticket_change records where both the
