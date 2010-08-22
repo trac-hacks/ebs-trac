@@ -176,6 +176,7 @@ def getlog(com, req):
 
 	db = com.env.get_db_cnx()
 	cursor = db.cursor()
+
 	sql = "SELECT ticket, time, oldvalue, newvalue " \
   	    + "FROM ticket_change " \
 	    + "WHERE author = %s " \
@@ -185,11 +186,20 @@ def getlog(com, req):
 
 	a = []
 	sum = 0
-	for row in cursor.fetchall():
-		tid = row[0]
-		local_epoch_seconds = row[1]
-		v0 = float(row[2])
-		v1 = float(row[3])
+	for (tid, local_epoch_seconds, oldvalue, newvalue) in cursor.fetchall():
+
+		#
+		# After installing ebstrac plugin, when I closed old tickets
+		# they got 'actualhours' ticket_change records where both the
+		# old and the new value were empty.  These records raised
+		# a TypeError when trying to convert to a float.
+		#
+
+		if not oldvalue and not newvalue:
+			continue
+
+		v0 = float(oldvalue)
+		v1 = float(newvalue)
 		hours = v1 - v0
 		tm = time.localtime(local_epoch_seconds)
 		a.append("%d\t%04d-%02d-%02d %02d:%02d\t%.3f" % (\
