@@ -78,8 +78,10 @@ def gettickets(com, req):
 
 	db = com.env.get_db_cnx()
 	cursor = db.cursor()
-	sql = "SELECT id, summary FROM ticket WHERE owner = %s " \
-	    + "AND status != 'closed' ORDER BY id"
+	sql = "SELECT t.id, t.summary FROM ticket t, enum e " \
+	    + "WHERE t.owner = %s AND e.name = t.priority " \
+	    + "AND e.type = 'priority' " \
+	    + "AND t.status != 'closed' ORDER BY e.value, t.id"
 	cursor.execute(sql, (user,))
 
 	a = []
