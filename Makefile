@@ -1,4 +1,7 @@
 MANDIR=/usr/local/share/man
+# OpenBSD installs man pages to
+#MANDIR=/usr/local/man
+
 BINDIR=/usr/local/bin
 
 py/dist/ebstrac-*.egg: py/ebstrac/*.py py/setup.py

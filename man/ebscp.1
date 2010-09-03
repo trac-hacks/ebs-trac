@@ -65,6 +65,10 @@ By default, hours are booked for today.  If you want to book time that
 you worked on a previous day, use the optional
 .Ar YYYY-MM-DD
 argument.
+.Ss ticket/<ticket_number>/minutes/[YYYY-MM-DD]
+.Pp
+Same as previous resource, but book the number of minutes to the
+ticket.  The minutes are converted to hours and posted to the ticket.
 .Ss ticket/<ticket_number>/status
 .Pp
 Change a ticket's status.  For this resource,

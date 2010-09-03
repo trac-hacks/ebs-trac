@@ -235,9 +235,10 @@ def is_hours(req):
 	a = req.path_info.strip('/').split('/')
 	return len(a) in (5, 6) and a[2] == 'ticket' and a[4] == 'hours'
 
-def posthours(com, req):
+def add_hours_to_ticket(com, req, delta):
 	'''Associate the hours someone worked with a ticket.'''
-	f = "posthours"
+
+	f = "add_hours_to_ticket"
 	if req.method != 'GET':
 		error(req, "%s: expected a GET" % f)
 
@@ -264,7 +265,6 @@ def posthours(com, req):
 		error(req, efmt % (f, tid))
 
 	oldval = float(row[0])
-	delta = float(req.args['data'])
 	newval = oldval + delta
 	if newval < 0:
 		efmt = "%s: can't end up with negative hours, " \
@@ -345,6 +345,25 @@ def posthours(com, req):
 		raise RequestDone
 	else:
 		error(req, "Internal error.")
+
+def posthours(com, req):
+	delta = float(req.args['data'])
+	add_hours_to_ticket(com, req, delta)
+
+def is_minutes(req):
+	'''
+		 /ebs/mark/ticket/1/minutes
+		 /ebs/mark/ticket/1/minutes/
+		 /ebs/mark/ticket/1/minutes/2010-08-14
+		 /ebs/mark/ticket/1/minutes/2010-08-14/
+	'''
+	a = req.path_info.strip('/').split('/')
+	return len(a) in (5, 6) and a[2] == 'ticket' and a[4] == 'minutes'
+
+def postminutes(com, req):
+	delta = float(req.args['data'])
+	delta = delta / 60.
+	add_hours_to_ticket(com, req, delta)
 
 def is_estimate(req):
 	'''
