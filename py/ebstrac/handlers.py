@@ -208,11 +208,12 @@ def getlog(com, req):
 
 		# Hours that are booked to a different date have the actual
 		# date stored in the related comment field.
-		sql = "SELECT newvalue " \
-		    + "FROM ticket_change " \
+
+		sql = "SELECT newvalue FROM ticket_change " \
 		    + "WHERE author = %s " \
 		    + "AND field = 'comment' " \
-		    + "AND time = %s"
+		    + "AND time = %s " \
+		    + "AND newvalue LIKE 'posted on %'"
 		cursor1.execute(sql, (user, local_epoch_seconds))
 		row = cursor1.fetchone()
 		if row:
@@ -222,8 +223,13 @@ def getlog(com, req):
 		else:
 			tm = time.localtime(local_epoch_seconds)
 			dt ="%04d-%02d-%02d" % (tm[0], tm[1], tm[2])
-		a.append("%d\t%s\t%.3f" % (tid, dt, hours))
+		#a.append("%d\t%s\t%.3f" % (tid, dt, hours))
+		a.append((tid, dt, hours))
 		sum += hours
+
+	# sort by dt			
+	a = sorted(a, key=lambda x: x[1])
+	a = ["%d\t%s\t%.3f" % (tid, dt, hours) for tid, dt, hours in a]
 	a.append("total = %.3f" % (sum,))
 	a.append("\n")
 	data = "\n".join(a)
