@@ -178,9 +178,10 @@ def getlog(com, req):
 
 	db = com.env.get_db_cnx()
 	cursor = db.cursor()
+	cursor1 = db.cursor()
 
 	sql = "SELECT ticket, time, oldvalue, newvalue " \
-  	    + "FROM ticket_change " \
+	    + "FROM ticket_change " \
 	    + "WHERE author = %s " \
 	    + "AND field = 'actualhours' " \
 	    + "ORDER BY time"
@@ -190,6 +191,7 @@ def getlog(com, req):
 	sum = 0
 	for row in cursor.fetchall():
 		(tid, local_epoch_seconds, oldvalue, newvalue) = row
+
 		#
 		# After installing ebstrac plugin, when I closed old tickets
 		# they got 'actualhours' ticket_change records where both the
@@ -203,17 +205,24 @@ def getlog(com, req):
 		v0 = float(oldvalue)
 		v1 = float(newvalue)
 		hours = v1 - v0
-		tm = time.localtime(local_epoch_seconds)
-		a.append("%d\t%04d-%02d-%02d %02d:%02d\t%.3f" % (\
-		    tid, 
-		    tm[0],
-		    tm[1],
-		    tm[2],
-		    tm[3],
-		    tm[4],
-		    hours
-		    )
-		)
+
+		# Hours that are booked to a different date have the actual
+		# date stored in the related comment field.
+		sql = "SELECT newvalue " \
+		    + "FROM ticket_change " \
+		    + "WHERE author = %s " \
+		    + "AND field = 'comment' " \
+		    + "AND time = %s"
+		cursor1.execute(sql, (user, local_epoch_seconds))
+		row = cursor1.fetchone()
+		if row:
+			# 'posted on 1285010611, applied to 2010-09-09'
+			a1 = row[0].split()
+			dt = a1[-1]
+		else:
+			tm = time.localtime(local_epoch_seconds)
+			dt ="%04d-%02d-%02d" % (tm[0], tm[1], tm[2])
+		a.append("%d\t%s\t%.3f" % (tid, dt, hours))
 		sum += hours
 	a.append("total = %.3f" % (sum,))
 	a.append("\n")
@@ -294,11 +303,14 @@ def add_hours_to_ticket(com, req, delta):
 		params = (newval, tid)
 		cursor.execute(sql, params)
 
+		#
 		# Trac stores every ticket field change as a comment.
 		# While I don't see where the comment text is that Trac
 		# renders, I know it is not stored in the ticket_change
 		# table.  However, Trac does enter a comment record, so
 		# I'll mimic that behavior here.  
+		#
+
 		sql = "SELECT max(oldvalue) FROM ticket_change " \
 		    + "WHERE ticket = %s AND field = 'comment'"
 		params = (tid, )
@@ -325,6 +337,9 @@ def add_hours_to_ticket(com, req, delta):
 		    + "%s, %s, %s, %s, %s, %s" \
 		    + ")"
 		params = [tid, tm, user, 'comment', col_n, '']
+
+		# Here's where we store the actual date the time change is for.
+		# (When hours posted were not for today.)
 		if dt is not None:
 			params[-1] = 'posted on %d, applied to %s' % (tm, dt)
 		cursor.execute(sql, params)
