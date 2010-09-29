@@ -25,13 +25,14 @@
 .Nd list contents of an evidence-based scheduling resource in Trac
 .Sh SYNOPSIS
 .Nm ebsls
-.Ar resource
+.Op resource
 .Sh DESCRIPTION
 The output of
 .Nm
 depends on the
-.Ar resource
-specified.
+.Nm resource
+specified.  The default resource is
+.Nm tickets .
 .Pp
 The supported resources are listed below.
 .Ss tickets
@@ -54,6 +55,25 @@ ticket summary
 The id, summary, expected hours, actual hours, status and description
 are printed out for each ticket you own that has a status other than
 .Dq closed .
+.Ss history
+.Pp
+List all closed tickets that were fixed.   Space-delimited columns in output
+are:
+.Pp
+.Bl -enum -offset indent -compact
+.It 
+ticket id
+.It 
+ticket owner
+.It 
+estimated hours
+.It 
+actual hours
+.It 
+velocity (estimate/actual)
+.El
+.Pp
+Tickets with no actual hours are skipped.
 .Ss log
 .Pp
 One row for time you posted time to a ticket.
@@ -70,13 +90,20 @@ hours worked
 .Sh EXAMPLES
 List your open tickets:
 .Pp
-.Dl $ ebsls tickets
+.Dl $ ebsls
 .Dl https://www.example.com/trac/ebs/mark/tickets:
 .Dl   593  API
 .Dl   690  SQL for Reporting
 .Dl   779  Get images to dev box.
 .Dl   848  testing ebs posting
 .Dl $
+.Sh BUGS
+.Pp
+When computing velocity, the last ticket owner wins.  If multiple
+people charge hours to the same ticket, then the velocity computation
+for that ticket will not be correct.  While it's possible to get in
+actual and estimated hours by who posted them, but we didn't do it.
+Instead, we use the policy that once you own a Trac ticket, you keep it.
 .Sh SEE ALSO
 .Xr ebscp 1
 .Xr ebsconf 5
