@@ -67,7 +67,7 @@ def is_tickets(req):
 	a = req.path_info.strip('/').split('/')
 	return len(a) == 3 and a[2] == 'tickets'
 
-def gettickets(com, req):
+def get_tickets(com, req):
 	'''Lookup all open (status != closed) tickets for a user.'''
 	f = "gettickets"
 	if req.method != 'GET':
@@ -105,7 +105,7 @@ def is_fulltickets(req):
 	a = req.path_info.strip('/').split('/')
 	return  len(a) == 3 and a[2] == 'fulltickets'
 
-def getfulltickets(com, req):
+def get_fulltickets(com, req):
 	'''Lookup all open (status != closed) tickets for a user.'''
 	f = "getfulltickets"
 	if req.method != 'GET':
@@ -167,7 +167,7 @@ def is_log(req):
 	a = req.path_info.strip('/').split('/')
 	return len(a) == 3 and a[2] == 'log'
 
-def getlog(com, req):
+def get_log(com, req):
 	'''Lookup all hours logged by user against all tickets.'''
 	f = "getlog"
 	if req.method != 'GET':
@@ -247,7 +247,7 @@ def is_history(req):
 	a = req.path_info.strip('/').split('/')
 	return len(a) == 3 and a[2] == 'history'
 
-def gethistory(com, req):
+def get_history(com, req):
 	'''Report history of hours and tickets across all users.'''
 	f = "gethistory"
 	if req.method != 'GET':
@@ -478,7 +478,7 @@ def add_hours_to_ticket(com, req, delta):
 	else:
 		error(req, "Internal error.")
 
-def posthours(com, req):
+def post_hours(com, req):
 	delta = float(req.args['data'])
 	add_hours_to_ticket(com, req, delta)
 
@@ -492,7 +492,7 @@ def is_minutes(req):
 	a = req.path_info.strip('/').split('/')
 	return len(a) in (5, 6) and a[2] == 'ticket' and a[4] == 'minutes'
 
-def postminutes(com, req):
+def post_minutes(com, req):
 	delta = float(req.args['data'])
 	delta = delta / 60.
 	add_hours_to_ticket(com, req, delta)
@@ -505,7 +505,7 @@ def is_estimate(req):
 	a = req.path_info.strip('/').split('/')
 	return len(a) == 5 and a[2] == 'ticket' and a[4] == 'estimate'
 
-def postestimate(com, req):
+def post_estimate(com, req):
 	'''Associate an estimate with a ticket.'''
 	f = "postestimate"
 	if req.method != 'GET':
@@ -606,7 +606,7 @@ def is_status(req):
 	a = req.path_info.strip('/').split('/')
 	return len(a) == 5 and a[2] == 'ticket' and a[4] == 'status'
 
-def poststatus(com, req):
+def post_status(com, req):
 	'''Change a ticket's status.'''
 	f = "poststatus"
 	if req.method != 'GET':

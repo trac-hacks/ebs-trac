@@ -29,14 +29,14 @@ class EBSComponent(Component):
 		'''register handlers'''
 		h = ebstrac.handlers
 		self.handlers = (
-		    (h.is_tickets, h.gettickets),
-		    (h.is_fulltickets, h.getfulltickets),
-		    (h.is_log, h.getlog),
-		    (h.is_hours, h.posthours),
-		    (h.is_minutes, h.postminutes),
-		    (h.is_estimate, h.postestimate),
-		    (h.is_status, h.poststatus),
-		    (h.is_history, h.gethistory),
+		    (h.is_tickets, h.get_tickets),
+		    (h.is_fulltickets, h.get_fulltickets),
+		    (h.is_log, h.get_log),
+		    (h.is_hours, h.post_hours),
+		    (h.is_minutes, h.post_minutes),
+		    (h.is_estimate, h.post_estimate),
+		    (h.is_status, h.post_status),
+		    (h.is_history, h.get_history),
 		)
 	
 	def match_request(self, req):
