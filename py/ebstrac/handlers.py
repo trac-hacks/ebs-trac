@@ -22,6 +22,8 @@ from trac.web.main import \
 	IRequestHandler, \
 	RequestDone
 
+magicname='EvidenceBasedSchedulingTimeClockPage'
+
 def error(req, data):
 	req.send_response(400)
 	req.send_header('Content-Type', 'plain/text')
@@ -510,6 +512,171 @@ def post_estimate(com, req):
 	f = "postestimate"
 	if req.method != 'GET':
 		error(req, "%s: expected a GET" % f)
+
+	a = req.path_info.strip('/').split('/')
+	user = a[1]
+	tid = a[3]
+
+	db = com.env.get_db_cnx()
+	cursor = db.cursor()
+
+	user_must_own_ticket(req, cursor, tid, user)
+
+	pathinfouser_must_equal_remoteuser(req, user)
+
+	sql = "SELECT value FROM ticket_custom " \
+	    + "WHERE name = 'estimatedhours' AND ticket = %s"
+	cursor.execute(sql, (tid,))
+	row = cursor.fetchone()
+	if not row:
+		efmt = "%s: ticket %s doesn't have estimatedhours custom field"
+		error(req, efmt % (f, tid))
+
+	oldval = 0.0
+	if row[0]:
+		oldval = float(row[0])
+	newval = float(req.args['data'])
+	if newval < 0:
+		efmt = "%s: can't have a negative estimate"
+		error(req, efmt % (f, ))
+	fmt = "%s: %s set estimate to %.4f hours for ticket %s (was %.4f)"
+	com.log.info(fmt % (f, user, newval, tid, oldval))
+
+	# if any exceptions, rollback everything
+	ok = True
+	try:
+		sql = "UPDATE ticket_custom SET value = %s " \
+		    + "WHERE ticket=%s AND name='estimatedhours'"
+		params = (newval, tid)
+		cursor.execute(sql, params)
+
+		# Trac stores every ticket field change as a comment.
+		# While I don't see where the comment text is that Trac
+		# renders, I know it is not stored in the ticket_change
+		# table.  However, Trac does enter a comment record, so
+		# I'll mimic that behavior here.  
+		sql = "SELECT max(oldvalue) FROM ticket_change " \
+		    + "WHERE ticket = %s AND field = 'comment'"
+		params = (tid, )
+		cursor.execute(sql, params)
+		row = cursor.fetchone()
+		col_n = 0
+		if row and row[0]:
+			col_n = int(row[0])
+		col_n += 1
+
+		dt = int(time.mktime(time.localtime()))
+		sql = "INSERT INTO ticket_change ( " \
+		    + "ticket, time, author, field, oldvalue, newvalue" \
+		    + ") VALUES ( " \
+		    + "%s, %s, %s, %s, %s, %s" \
+		    + ")"
+		params = (tid, dt, user, 'estimatedhours', oldval, newval)
+		cursor.execute(sql, params)
+
+		sql = "INSERT INTO ticket_change ( " \
+		    + "ticket, time, author, field, oldvalue, newvalue" \
+		    + ") VALUES ( " \
+		    + "%s, %s, %s, %s, %s, %s" \
+		    + ")"
+		params = (tid, dt, user, 'comment', col_n, '')
+		cursor.execute(sql, params)
+
+		db.commit()
+	except Exception, e:
+		db.rollback()
+		efmt = "%s: %s, sql=%s, params=%s"
+		com.log.error(efmt % (f, e, sql, params))
+		ok = False
+
+	if ok:
+		data="OK"
+		req.send_response(200)
+		req.send_header('Content-Type', 'plain/text')
+		req.send_header('Content-Length', len(data))
+		req.write(data)
+		raise RequestDone
+	else:
+		error(req, "Internal error.")
+
+
+def is_clock(req):
+	'''
+		/ebs/mark/clock
+		/ebs/mark/clock/950
+	'''
+	a = req.path_info.strip('/').split('/')
+	
+	return len(a) in (3, 4) and a[2] == 'clock'
+
+def get_clock(com, req):
+	'''
+	We store clock data in a wiki page with the "magic" name
+
+		EvidenceBasedSchedulingTimeClockPage
+
+	Each row of text is a record, with the following space-delimited
+	columns:
+		1. user id
+		2. ticket id
+		3. date
+		4. time
+
+	If there is no record for a user, they have no row.  We store the 
+	current state only.
+	'''
+
+	global magicname
+
+	a = req.path_info.strip('/').split('/')
+	user = a[1]
+
+	pathinfouser_must_equal_remoteuser(req, user)
+
+	db = com.env.get_db_cnx()
+	cursor = db.cursor()
+        cursor.execute(
+	    "SELECT "
+		"w1.text "
+	     "FROM "
+		 "wiki w1,"
+                 "(SELECT name, max(version) AS ver "
+                  "FROM wiki WHERE name = %s GROUP BY name) w2 "
+	    "WHERE "
+		 "w1.version = w2.ver AND "
+		 "w1.name = w2.name",
+	     (magicname,)
+	     )
+	    
+
+	row = cursor.fetchone()
+
+	req.send_response(200)
+	req.send_header('Content-Type', 'plain/text')
+
+	if row:
+		data = row[0]
+	else:
+		data = "No clock running.\n"
+	req.send_header('Content-Length', len(data))
+	req.write(data)
+
+	raise RequestDone
+
+
+def getorpost_clock(com, req):
+	'''
+	If a GET, list what task the clock is running on.  
+	If a POST, do different things based on data posted.
+	'''
+
+	global magicname
+	f = "getorpost_clock"
+
+	if req.method == 'GET':
+		get_clock(com, req)
+
+	error(req, "post_clock: Not implemented")
 
 	a = req.path_info.strip('/').split('/')
 	user = a[1]
