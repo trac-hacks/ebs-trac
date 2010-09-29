@@ -36,6 +36,7 @@ class EBSComponent(Component):
 		    (h.is_minutes, h.postminutes),
 		    (h.is_estimate, h.postestimate),
 		    (h.is_status, h.poststatus),
+		    (h.is_history, h.gethistory),
 		)
 	
 	def match_request(self, req):

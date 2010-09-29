@@ -239,6 +239,117 @@ def getlog(com, req):
 	req.write(data)
 	raise RequestDone
 
+def is_history(req):
+	'''
+		/ebs/mark/history
+		/ebs/mark/history/
+	'''
+	a = req.path_info.strip('/').split('/')
+	return len(a) == 3 and a[2] == 'history'
+
+def gethistory(com, req):
+	'''Report history of hours and tickets across all users.'''
+	f = "gethistory"
+	if req.method != 'GET':
+		error(req, "%s: expected a GET" % f)
+	
+	a = req.path_info.strip('/').split('/')
+	user = a[1]
+
+	db = com.env.get_db_cnx()
+	cursor = db.cursor()
+	cursor1 = db.cursor()
+
+	sql = '''SELECT 
+		t.id,
+		t.owner,
+		e.hours as estimate,
+		a.hours as actual
+	FROM
+		ticket t, 
+		(
+			SELECT 
+				ticket,
+				CASE value
+				    WHEN '' THEN 0.0
+				    ELSE CAST(value as float)
+				END AS hours
+			FROM
+				ticket_custom
+			WHERE
+				name = 'estimatedhours'
+		) e,
+		(
+			SELECT 
+				ticket,
+				CASE value
+				    WHEN '' THEN 0.0
+				    ELSE CAST(value as float)
+				END AS hours
+			FROM
+				ticket_custom
+			WHERE
+				name = 'actualhours'
+		) a
+	WHERE
+		t.id = e.ticket AND
+		e.ticket = a.ticket AND
+		t.status = 'closed' AND
+		t.resolution = 'fixed'
+	ORDER BY
+		t.owner,
+		t.id
+	'''
+
+	cursor.execute(sql, (user,))
+
+	#
+	# NOTE: 
+	#	The ticket owner can change.  
+	#	The SQL above assumes the last ticket owner "wins";
+	#	that is, get's credit for the full estimate and actual
+	#	values.
+	#
+	#	We could dive into the ticket change table and pull out
+	#	which users charged which hours, but we'll just keep the
+	#	biz rule that once you own a ticket, it stays with you.
+	#
+
+
+	# Trac allows you to put in whatever string for owner.
+	# We'll at least catch case differences here.
+	rows = sorted(cursor.fetchall(), 
+	    key = lambda x: x[1].lower() + "%015d" % x[0])
+
+	a = []
+	for (tid, owner, est, act) in rows:
+		
+		#
+		# Tickets with zero actual hours are not interesting.
+		# In fact, they are invalid---probably resolution was
+		# wrong.  Should have been "Invalid" or "Won't Fix" 
+		# instead of "Fixed".
+		#
+
+		if not act > 0.0:
+			continue
+
+		# Per Joel on Softare,
+		#
+		# 	velocity = estimate / actual
+		#
+
+		velocity = est / act
+		a.append("%-10s %6d %5.2f %5.2f %5.2f" %  \
+		    (owner, tid, est, act, velocity)
+		    )
+		
+	data = "\n".join(a)
+	req.send_response(200)
+	req.send_header('Content-Type', 'plain/text')
+	req.send_header('Content-Length', len(data))
+	req.write(data)
+	raise RequestDone
 
 def is_hours(req):
 	'''
