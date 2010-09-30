@@ -26,7 +26,7 @@
 .Sh SYNOPSIS
 .Nm ebscp
 .Ar data
-.Ar resource
+.Op resource
 .Sh DESCRIPTION
 Copy the given 
 .Ar data 
@@ -38,6 +38,9 @@ would be the number of hours you worked, and the
 .Ar resource
 would be the ticket.  (See EXAMPLES section below for a specific example.)
 .Pp
+The default resource is 
+.Nm clock .
+.Pp
 If the copy succeeds, the output of
 .Nm
 is OK.
@@ -45,6 +48,27 @@ is OK.
 For ticket resources, you must be the owner of the ticket.
 .Pp
 The supported resources are:
+.Ss clock
+.Pp
+Tool to assist accurate tracking of time.  It supports the following
+data items:
+." .Bl -enum -offset indent -compact
+.Bl -enum -offset indent -compact
+.It 
+.Nm start
+Clock in to a task.  Give the ticket number as the resource.  If clock
+is already running for this task, output the elapsed time since the
+clock started.  If clock is running for a different task, clock out of
+the first task (booking the elapsed time to that ticket), and start the
+clock running on the new ticket.
+.It 
+.Nm stop
+Clock out of a task and book the elapsed time to the ticket.  If the
+clock is not running, this has no effect.
+.It 
+.Nm clear
+Stop the clock without booking time to a ticket.
+.El
 .Ss ticket/<ticket_number>/estimate
 .Pp
 Estimate how many hours it will take you to finish 
@@ -88,6 +112,35 @@ Close ticket 15.
 .Pp
 .Dl $ ebscp closed ticket/15/status
 .Dl OK$ 
+.Pp
+Start time clock running on ticket 896.
+.Pp
+.Dl $ ebscp start 896
+.Dl https://example.com/ebs/mark/clock/896?data=start:
+.Dl Started clock for ticket 896.
+.Pp
+A bit later, see how long we have been working on ticket 896.
+.Pp
+.Dl $ ebscp start 896
+.Dl https://example.com/ebs/mark/clock/896?data=start:
+.Dl Clock already running for ticket 896, started 0.46 hours ago.
+.Pp
+We're done, stop clock on this ticket.
+.Pp
+.Dl $ ebscp stop 896
+.Dl https://example.com/ebs/mark/clock/896?data=stop:
+.Dl Logged 0.462 hours to ticket 896
+.Sh BUGS
+.Pp
+The method for keeping track of the current time clock state is a hack.
+We use the magic wiki page name
+.Dq EvidenceBasedSchedulingTimeClockPage
+to store the current state.
+.Pp
+The semantics of adding hours versus setting an estimate are inconsistent.
+When you copy a value to the ticket's hours resource, the hours are added.
+But when you copy a value to the ticket's estimate (or status) resource,
+the value is overwritten.
 .Sh SEE ALSO
 .Xr ebsls 5
 .Xr ebsconf 5
