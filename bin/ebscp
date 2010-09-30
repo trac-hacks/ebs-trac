@@ -6,10 +6,21 @@
 
 usage="$0 <data> <url>"
 [ "x$1" = "x" ] && echo $usage > "/dev/stderr" && exit 1
-[ "x$2" = "x" ] && echo $usage > "/dev/stderr" && exit 1
+
+# Default resource is the time clock
+url=clock
+if [ "x$2" != "x" ]; then
+	url=$2
+fi
+
+# If URL is just a number, assume it's a ticket # and we are
+# working with the time clock.
+n=$(echo $url | tr -d [:digit:])
+if [ "$n" = "" ] ; then
+	url=clock/$url
+fi
 
 data=$1
-url=$2
 
 . ~/.ebsconf
 
@@ -25,6 +36,7 @@ echo "$u:"
 #
 
 
-# -k option because my SSL cert is self-signed, old, for wrong domain.
+# -k because my SSL cert is self-signed, old, and for wrong domain.
 
 curl -k --user $user:$pass $u
+echo ""

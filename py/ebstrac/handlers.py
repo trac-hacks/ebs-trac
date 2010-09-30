@@ -15,12 +15,22 @@
 # OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 # 
 
-import time
+# XXX: refactor into handlers subdirectory with one module per resource.
+# XXX: Audit that malicious input is handled properly.
 
-from trac.core import *
-from trac.web.main import \
-	IRequestHandler, \
-	RequestDone
+from time import time, localtime, strftime, mktime, strptime
+
+# Hack so unit tests run if Trac not installed.
+testing = False
+
+try:
+	from trac.core import *
+	from trac.web.main import \
+		IRequestHandler, \
+		RequestDone
+except ImportError:
+	if testing:
+		pass
 
 magicname='EvidenceBasedSchedulingTimeClockPage'
 
@@ -30,9 +40,9 @@ def error(req, data):
 	req.send_header('Content-Length', len(data))
 	req._send_cookie_headers()
 	req.write(data)
+	req.write('\n')
 	raise RequestDone
 
-# XXX: refactor this into a handlers sub-package; e.g., handers/tickets.py
 
 def user_must_own_ticket(req, cursor, tid, user):
 	'''Return True or False.'''
@@ -97,6 +107,7 @@ def get_tickets(com, req):
 	req.send_header('Content-Type', 'plain/text')
 	req.send_header('Content-Length', len(data))
 	req.write(data)
+	req.write('\n')
 	raise RequestDone
 
 def is_fulltickets(req):
@@ -125,7 +136,7 @@ def get_fulltickets(com, req):
 	    + "ORDER BY id"
 	cursor.execute(sql, (user,))
 
-	# XXX: not sure if I can reuse a cursor I am scanning.  (i suspect not.)
+	# XXX: not sure if I can reuse a cursor I am scanning.  (I suspect not.)
 	c1 = db.cursor()
 	sqlact = "SELECT value FROM ticket_custom " \
 	    + "WHERE name = 'actualhours' AND ticket = %s"
@@ -159,6 +170,7 @@ def get_fulltickets(com, req):
 	req.send_header('Content-Type', 'plain/text')
 	req.send_header('Content-Length', len(data))
 	req.write(data)
+	req.write('\n')
 	raise RequestDone
 
 def is_log(req):
@@ -223,7 +235,7 @@ def get_log(com, req):
 			a1 = row[0].split()
 			dt = a1[-1]
 		else:
-			tm = time.localtime(local_epoch_seconds)
+			tm = localtime(local_epoch_seconds)
 			dt ="%04d-%02d-%02d" % (tm[0], tm[1], tm[2])
 		#a.append("%d\t%s\t%.3f" % (tid, dt, hours))
 		a.append((tid, dt, hours))
@@ -239,6 +251,7 @@ def get_log(com, req):
 	req.send_header('Content-Type', 'plain/text')
 	req.send_header('Content-Length', len(data))
 	req.write(data)
+	req.write('\n')
 	raise RequestDone
 
 def is_history(req):
@@ -351,6 +364,7 @@ def get_history(com, req):
 	req.send_header('Content-Type', 'plain/text')
 	req.send_header('Content-Length', len(data))
 	req.write(data)
+	req.write('\n')
 	raise RequestDone
 
 def is_hours(req):
@@ -363,19 +377,10 @@ def is_hours(req):
 	a = req.path_info.strip('/').split('/')
 	return len(a) in (5, 6) and a[2] == 'ticket' and a[4] == 'hours'
 
-def add_hours_to_ticket(com, req, delta):
+def add_hours_to_ticket(com, req, user, tid, delta, dt=None):
 	'''Associate the hours someone worked with a ticket.'''
 
 	f = "add_hours_to_ticket"
-	if req.method != 'GET':
-		error(req, "%s: expected a GET" % f)
-
-	a = req.path_info.strip('/').split('/')
-	user = a[1]
-	tid = a[3]
-	dt = None
-	if len(a) > 5:
-		dt = a[5]
 
 	db = com.env.get_db_cnx()
 	cursor = db.cursor()
@@ -440,7 +445,7 @@ def add_hours_to_ticket(com, req, delta):
 			col_n = int(row[0])
 		col_n += 1
 
-		tm = int(time.mktime(time.localtime()))
+		tm = int(time())
 
 		sql = "INSERT INTO ticket_change ( " \
 		    + "ticket, time, author, field, oldvalue, newvalue" \
@@ -470,19 +475,32 @@ def add_hours_to_ticket(com, req, delta):
 		com.log.error(efmt % (f, e, sql, params))
 		ok = False
 
+	return ok
+
+def add_hours_and_return(com, req, hours):
+	if req.method != 'GET':
+		error(req, "%s: expected a GET" % f)
+	a = req.path_info.strip('/').split('/')
+	user = a[1]
+	tid = a[3]
+	dt = None
+	if len(a) > 5:
+		dt = a[5]
+	ok = add_hours_to_ticket(com, req, user, tid, hours, dt)
 	if ok:
 		data="OK"
 		req.send_response(200)
 		req.send_header('Content-Type', 'plain/text')
 		req.send_header('Content-Length', len(data))
 		req.write(data)
+		req.write('\n')
 		raise RequestDone
 	else:
 		error(req, "Internal error.")
 
 def post_hours(com, req):
-	delta = float(req.args['data'])
-	add_hours_to_ticket(com, req, delta)
+	hours = float(req.args['data'])
+	add_hours_and_return(com, req, hours)
 
 def is_minutes(req):
 	'''
@@ -495,9 +513,9 @@ def is_minutes(req):
 	return len(a) in (5, 6) and a[2] == 'ticket' and a[4] == 'minutes'
 
 def post_minutes(com, req):
-	delta = float(req.args['data'])
-	delta = delta / 60.
-	add_hours_to_ticket(com, req, delta)
+	hours = float(req.args['data'])
+	hours = hours / 60.
+	add_hours_and_return(com, req, hours)
 
 def is_estimate(req):
 	'''
@@ -565,7 +583,7 @@ def post_estimate(com, req):
 			col_n = int(row[0])
 		col_n += 1
 
-		dt = int(time.mktime(time.localtime()))
+		dt = int(time())
 		sql = "INSERT INTO ticket_change ( " \
 		    + "ticket, time, author, field, oldvalue, newvalue" \
 		    + ") VALUES ( " \
@@ -595,6 +613,7 @@ def post_estimate(com, req):
 		req.send_header('Content-Type', 'plain/text')
 		req.send_header('Content-Length', len(data))
 		req.write(data)
+		req.write('\n')
 		raise RequestDone
 	else:
 		error(req, "Internal error.")
@@ -609,7 +628,170 @@ def is_clock(req):
 	
 	return len(a) in (3, 4) and a[2] == 'clock'
 
-def get_clock(com, req):
+def lookup_clocktext(cursor):
+	'''
+	Return None if wiki page does not exist.
+	Return '' if wiki page exists, but is empty.
+	'''
+
+	global magicname
+
+        cursor.execute(
+	    "SELECT "
+		"w1.text "
+	     "FROM "
+		 "wiki w1,"
+                 "(SELECT name, max(version) AS ver "
+                  "FROM wiki WHERE name = %s GROUP BY name) w2 "
+	    "WHERE "
+		 "w1.version = w2.ver AND "
+		 "w1.name = w2.name",
+	     (magicname,)
+	     )
+	row = cursor.fetchone()
+	if row:
+		return row[0]
+	else:
+		return None
+	
+def update_clocktext(com, db, cursor, user, ip, data):
+	'''
+	We use wiki page to store current state of time clock for all users.
+
+	Format of page is detailed in at least two other places in this 
+	module.
+
+	Create wiki page if it doesn't exist.
+
+	Return True on success, False if exception on insert.
+	'''
+
+	global magicname
+
+	# Trac wiki versioning is one-based, not zero-based.
+	initial_trac_wiki_version = 1
+
+	#
+	#	data = ( (uid1, tid1, dt1, tm1), (uid2, tid2, dt2, tm2), ...)
+
+	text = "\r".join(["%s %d %s %s" % row for row in data])
+
+        cursor.execute(
+	    "SELECT max(version) FROM wiki WHERE name = %s GROUP BY name",
+	     (magicname,)
+	     )
+	version = initial_trac_wiki_version
+	row = cursor.fetchone()
+	if row:
+		version = int(row[0]) + 1
+
+	ok = True
+	try:
+		sql = "INSERT INTO wiki ("	\
+			"name, "	\
+			"version, "	\
+			"time, "	\
+			"author, "	\
+			"ipnr, "	\
+			"text, "	\
+			"readonly "	\
+		    ") VALUES ("	\
+			"%s, "	\
+			"%s, "	\
+			"%s, "	\
+			"%s, "	\
+			"%s, "	\
+			"%s, "	\
+			"%s "	\
+		    ")"
+		params = (
+		    magicname,
+		    version,
+		    time(), 
+		    user,
+		    ip, 
+		    text,
+		    1
+		    )
+		cursor.execute(sql, params)
+		db.commit()
+	except Exception, e:
+		db.rollback()
+		efmt = "%s: %s, sql=%s, params=%s"
+		com.log.error(efmt % (f, e, sql, params))
+		ok = False
+
+	if ok:
+		com.log.info("updated %s to version %d" % (magicname, version))
+
+	return ok
+
+
+def elapsed_hours(dt, tm):
+	'''
+	Compute elapsed time between dt ("YYYY-MM-DD") and tm ("HH:MM:SS")
+	and now. (EDT)
+
+	If no timezone specified, strptime() uses -1 for the tm_isdst 
+	(daylight savings flag), which expresses the time as localtime,
+	not UTC.
+
+		>>> import time
+		>>> s = "2010-09-30 08:02:41"
+		>>> time.strptime(s, "%Y-%m-%d %H:%M:%S")
+		(2010, 9, 30, 8, 2, 41, 3, 273, -1)
+
+	This is what we want, as all clock times are handled in server's
+	localtime.
+
+	We return the difference in hours.
+
+		>>> t0 = localtime(time.time() - 60 * 60)
+		>>> dt = time.strftime("%Y-%m-%d", t0)
+		>>> tm = time.strftime("%H:%M:%S", t0)
+		>>> elapsed_hours(dt, tm)
+		1.0
+
+	Even if only one minute has elapsed.
+
+		>>> t0 = localtime(time.time() - 60 * 1)
+		>>> dt = time.strftime("%Y-%m-%d", t0)
+		>>> tm = time.strftime("%H:%M:%S", t0)
+		>>> "%.3f" % elapsed_hours(dt, tm)
+		'0.017'
+		
+	Method does no rounding.  Thirty seconds is 3/360'ths
+	of an hour.
+
+		>>> t0 = localtime(time.time() - 30 * 1)
+		>>> dt = time.strftime("%Y-%m-%d", t0)
+		>>> tm = time.strftime("%H:%M:%S", t0)
+		>>> "%.5f" % elapsed_hours(dt, tm)
+		'0.00833'
+	'''
+
+	fmt = "%Y-%m-%d %H:%M:%S"
+	s = " ".join((dt, tm))
+	t0 = mktime(strptime(s, fmt))
+	t1 = int(time())
+	return (t1 - t0) / float(60 * 60)
+
+
+def stop_clock(com, req, user, ticketid, dt, tm):
+	'''
+	Compute elapsed time since dt and tm and add hours to ticket
+	for user.
+
+	Return the hours we logged.
+	'''
+
+	hours = elapsed_hours(dt, tm)
+	ok = add_hours_to_ticket(com, req, user, ticketid, hours)
+	if not ok:
+		error(req, "Internal error.")
+	return hours
+
+def post_clock(com, req):
 	'''
 	We store clock data in a wiki page with the "magic" name
 
@@ -627,142 +809,132 @@ def get_clock(com, req):
 	'''
 
 	global magicname
+	f = "post_clock"
 
 	a = req.path_info.strip('/').split('/')
 	user = a[1]
+	tid = None
+	if len(a) == 4:
+		try:
+			tid = int(a[3])
+		except TypeError:
+			error(req, "%s must be a ticket number" % a[3])
 
 	pathinfouser_must_equal_remoteuser(req, user)
 
 	db = com.env.get_db_cnx()
 	cursor = db.cursor()
-        cursor.execute(
-	    "SELECT "
-		"w1.text "
-	     "FROM "
-		 "wiki w1,"
-                 "(SELECT name, max(version) AS ver "
-                  "FROM wiki WHERE name = %s GROUP BY name) w2 "
-	    "WHERE "
-		 "w1.version = w2.ver AND "
-		 "w1.name = w2.name",
-	     (magicname,)
-	     )
-	    
+	s = lookup_clocktext(cursor)
+	if s is None:
+		s = ''
 
-	row = cursor.fetchone()
+	# Get clock data from wiki page.  Each row of text is a record,
+	# with the following space-delimited columns:
+	#
+	# 	1. user id
+	# 	2. ticket id
+	# 	3. date
+	# 	4. time
+	#
+	# Trac uses carriage returns to indicate newlines in wiki text.
+	#
+
+	lines = s.split('\r')
+	a = []
+	last = ()
+	for line in lines:
+		if not line.strip():
+			continue
+		columns = line.split(' ')
+		if columns[0] == user:
+			last = columns[1:]
+			# Remove old entry from data array
+			continue
+		a.append(columns)
+	if last:
+		lasttid = int(last[0])
+		lastdt = last[1]
+		lasttm = last[2]
+
+	# $ ebscp <verb> clock
+	data = ""
+	verb = req.args['data'].lower()
+	if verb == 'stop':
+		if last:
+			hours_logged = stop_clock(com, req, user, *last)
+			data = "Logged %.3f hours to ticket %d" % \
+			    (hours_logged, lasttid)
+		else:
+			# nothing running, so nothing to stop.
+			pass
+	elif verb == 'clear':
+		# Leave user out of data array (as it is now)
+		pass
+	elif verb == 'start':
+
+		if not tid:
+			error(req, "What ticket you are starting to work on?")
+
+		if last:
+
+			#
+			# Errors are things that should stop a shell
+			# script with a non-zero return value.  This case
+			# doesn't qualify.
+			#
+
+			if tid == lasttid:
+				hours = elapsed_hours(lastdt, lasttm)
+				msg = "Clock already running for ticket %d, " \
+				    "started %.2f hours ago."
+				data = msg % (tid, hours)
+
+				# XXX: routine should have one exit point.
+				req.send_response(200)
+				req.send_header('Content-Type', 'plain/text')
+				req.send_header('Content-Length', len(data))
+				req.write(data)
+				req.write('\n')
+				raise RequestDone
+
+			# 
+			# We have a running clock for a different ticket.
+			# Compute the elapsed time and log the hours to 
+			# the ticket.
+			#
+
+			hours_logged = stop_clock(com, req, user, *last)
+			data = "Logged %.3f hours to ticket %d" % \
+			    (hours_logged, lasttid)
+
+		epoch_seconds = int(time())
+		a.append( (
+		    user, 
+		    tid, 
+		    strftime("%Y-%m-%d", localtime(epoch_seconds)),
+		    strftime("%H:%M:%S", localtime(epoch_seconds))
+		    ) )
+
+		if data:
+			data += ", and started clock for ticket %d." % tid
+		else:
+			data = "Started clock for ticket %d." % tid
+
+	# Update the magic wiki page to the next version.
+
+	if not update_clocktext(com, db, cursor, user, req.remote_addr, a):
+		error(req, 
+		    "Boom!  (Probably some DB issue, check server logs.)")
+
+	if not data:
+		data="OK"
 
 	req.send_response(200)
 	req.send_header('Content-Type', 'plain/text')
-
-	if row:
-		data = row[0]
-	else:
-		data = "No clock running.\n"
 	req.send_header('Content-Length', len(data))
 	req.write(data)
-
+	req.write('\n')
 	raise RequestDone
-
-
-def getorpost_clock(com, req):
-	'''
-	If a GET, list what task the clock is running on.  
-	If a POST, do different things based on data posted.
-	'''
-
-	global magicname
-	f = "getorpost_clock"
-
-	if req.method == 'GET':
-		get_clock(com, req)
-
-	error(req, "post_clock: Not implemented")
-
-	a = req.path_info.strip('/').split('/')
-	user = a[1]
-	tid = a[3]
-
-	db = com.env.get_db_cnx()
-	cursor = db.cursor()
-
-	user_must_own_ticket(req, cursor, tid, user)
-
-	pathinfouser_must_equal_remoteuser(req, user)
-
-	sql = "SELECT value FROM ticket_custom " \
-	    + "WHERE name = 'estimatedhours' AND ticket = %s"
-	cursor.execute(sql, (tid,))
-	row = cursor.fetchone()
-	if not row:
-		efmt = "%s: ticket %s doesn't have estimatedhours custom field"
-		error(req, efmt % (f, tid))
-
-	oldval = 0.0
-	if row[0]:
-		oldval = float(row[0])
-	newval = float(req.args['data'])
-	if newval < 0:
-		efmt = "%s: can't have a negative estimate"
-		error(req, efmt % (f, ))
-	fmt = "%s: %s set estimate to %.4f hours for ticket %s (was %.4f)"
-	com.log.info(fmt % (f, user, newval, tid, oldval))
-
-	# if any exceptions, rollback everything
-	ok = True
-	try:
-		sql = "UPDATE ticket_custom SET value = %s " \
-		    + "WHERE ticket=%s AND name='estimatedhours'"
-		params = (newval, tid)
-		cursor.execute(sql, params)
-
-		# Trac stores every ticket field change as a comment.
-		# While I don't see where the comment text is that Trac
-		# renders, I know it is not stored in the ticket_change
-		# table.  However, Trac does enter a comment record, so
-		# I'll mimic that behavior here.  
-		sql = "SELECT max(oldvalue) FROM ticket_change " \
-		    + "WHERE ticket = %s AND field = 'comment'"
-		params = (tid, )
-		cursor.execute(sql, params)
-		row = cursor.fetchone()
-		col_n = 0
-		if row and row[0]:
-			col_n = int(row[0])
-		col_n += 1
-
-		dt = int(time.mktime(time.localtime()))
-		sql = "INSERT INTO ticket_change ( " \
-		    + "ticket, time, author, field, oldvalue, newvalue" \
-		    + ") VALUES ( " \
-		    + "%s, %s, %s, %s, %s, %s" \
-		    + ")"
-		params = (tid, dt, user, 'estimatedhours', oldval, newval)
-		cursor.execute(sql, params)
-
-		sql = "INSERT INTO ticket_change ( " \
-		    + "ticket, time, author, field, oldvalue, newvalue" \
-		    + ") VALUES ( " \
-		    + "%s, %s, %s, %s, %s, %s" \
-		    + ")"
-		params = (tid, dt, user, 'comment', col_n, '')
-		cursor.execute(sql, params)
-
-		db.commit()
-	except Exception, e:
-		db.rollback()
-		efmt = "%s: %s, sql=%s, params=%s"
-		com.log.error(efmt % (f, e, sql, params))
-		ok = False
-
-	if ok:
-		data="OK"
-		req.send_response(200)
-		req.send_header('Content-Type', 'plain/text')
-		req.send_header('Content-Length', len(data))
-		req.write(data)
-		raise RequestDone
-	else:
-		error(req, "Internal error.")
 
 
 def is_status(req):
@@ -817,7 +989,7 @@ def post_status(com, req):
 	# If any exceptions, rollback everything.
 	ok = True
 	try:
-		tm = int(time.mktime(time.localtime()))
+		tm = int(mktime(localtime()))
 
 		resolution = ''
 		if newval == 'closed':
@@ -884,7 +1056,13 @@ def post_status(com, req):
 		req.send_header('Content-Type', 'plain/text')
 		req.send_header('Content-Length', len(data))
 		req.write(data)
+		req.write('\n')
 		raise RequestDone
 	else:
 		error(req, "Internal error.")
 
+
+if __name__ == '__main__':
+	testing = True
+	import doctest
+	doctest.testmod()
