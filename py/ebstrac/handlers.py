@@ -32,6 +32,10 @@ except ImportError:
 	if testing:
 		pass
 
+import ebs
+import ascii_plotter as plotter
+
+
 magicname='EvidenceBasedSchedulingTimeClockPage'
 
 def error(req, data):
@@ -254,26 +258,144 @@ def get_log(com, req):
 	req.write('\n')
 	raise RequestDone
 
-def is_history(req):
+def lookup_todo(db, milestone):
 	'''
-		/ebs/mark/history
-		/ebs/mark/history/
+	Return a list of 
+
+		(user, ticket, estimated_hours, actual_hours, left)
+
+	tuples for all tickets that are open for the given milestone.
 	'''
-	a = req.path_info.strip('/').split('/')
-	return len(a) == 3 and a[2] == 'history'
 
-def get_history(com, req):
-	'''Report history of hours and tickets across all users.'''
-	f = "gethistory"
-	if req.method != 'GET':
-		error(req, "%s: expected a GET" % f)
-	
-	a = req.path_info.strip('/').split('/')
-	user = a[1]
-
-	db = com.env.get_db_cnx()
 	cursor = db.cursor()
-	cursor1 = db.cursor()
+
+	sql = '''SELECT 
+		t.id,
+		t.owner,
+		e.hours as estimate,
+		a.hours as actual
+	FROM
+		ticket t, 
+		(
+			SELECT 
+				ticket,
+				CASE value
+				    WHEN '' THEN 0.0
+				    ELSE CAST(value as float)
+				END AS hours
+			FROM
+				ticket_custom
+			WHERE
+				name = 'estimatedhours'
+		) e,
+		(
+			SELECT 
+				ticket,
+				CASE value
+				    WHEN '' THEN 0.0
+				    ELSE CAST(value as float)
+				END AS hours
+			FROM
+				ticket_custom
+			WHERE
+				name = 'actualhours'
+		) a
+	WHERE
+		t.id = e.ticket AND
+		e.ticket = a.ticket AND
+		t.status in ('open', 'new', 'reopened') AND
+		t.milestone = %s
+	ORDER BY
+		t.owner,
+		t.id
+	'''
+
+	cursor.execute(sql, (milestone,))
+
+	#
+	# NOTE: 
+	#	The ticket owner can change.  
+	#	The SQL above assumes the last ticket owner "wins";
+	#	that is, get's credit for the full estimate and actual
+	#	values.
+	#
+	#	We could dive into the ticket change table and pull out
+	#	which users charged which hours, but we'll just keep the
+	#	biz rule that once you own a ticket, it stays with you.
+	#
+
+
+	# Trac allows you to put in whatever string for owner.
+	# We'll at least catch case differences here.
+	rows = sorted(cursor.fetchall(), 
+	    key = lambda x: x[1].lower() + "%015d" % x[0])
+
+	a = []
+	for (tid, owner, est, act) in rows:
+		
+		#
+		# Tickets with a blank estimate are problematic.
+		#
+		# It's possible they are assigned to a milestone but don't
+		# have an estimate yet and don't have any hours booked 
+		# to them yet.  We can safely skip those.
+		#
+		# If a ticket has actual hours, it is supposed to have an
+		# estimate.  Enforce this strictly---make the user fix 
+		# the data.  With this data situaion, it is not possible
+		# to make a good estimate.
+		#
+
+		thresh = 0.000001
+		if est < thresh:
+			if act < thresh:
+				continue
+			else:
+				efmt = "Ticket %d has actual hours but a "  \
+				    "zero estimate---fix data and re-run."
+				error(efmt % tid)
+
+		todo = est - act
+
+		#
+		# What if the developer has already booked more time
+		# than they estimated?
+		#
+		# The Joel on Software blog post doesn't mention this
+		# situation.  In fact, he doesn't mention subtracting
+		# actual hours already booked to open tickets at all.
+		#
+		# One way to handle this is to subtract the actual
+		# hours after applying the randomly selected velocity to
+		# the estimate.  If the developer typically goes over,
+		# then the hours left using this method may still be
+		# positive.
+		#
+		# Another way is to ignore actual hours posted.
+		#
+		# A third way is to somehow estimate the time left, 
+		# perhaps based on how much over they are already
+		# and the randomly selected velocity.
+		#
+		# Punt for now, we'll deal with this later in the flow.
+		#
+
+		a.append((owner, tid, est, act, todo))
+
+	return tuple(a)
+
+
+def lookup_history(db):
+	'''
+	Return a list of 
+
+		(user, ticket, estimated_hours, actual_hours, velocity)
+
+	tuples for all tickets closed as "fixed" that had time booked
+	to them.
+	'''
+
+	cursor = db.cursor()
 
 	sql = '''SELECT 
 		t.id,
@@ -316,7 +438,7 @@ def get_history(com, req):
 		t.id
 	'''
 
-	cursor.execute(sql, (user,))
+	cursor.execute(sql)
 
 	#
 	# NOTE: 
@@ -355,11 +477,33 @@ def get_history(com, req):
 		#
 
 		velocity = est / act
-		a.append("%-10s %6d %5.2f %5.2f %5.2f" %  \
-		    (owner, tid, est, act, velocity)
-		    )
-		
-	data = "\n".join(a)
+		a.append((owner, tid, est, act, velocity))
+
+	return tuple(a)
+
+
+def is_history(req):
+	'''
+		/ebs/mark/history
+		/ebs/mark/history/
+	'''
+	a = req.path_info.strip('/').split('/')
+	return len(a) == 3 and a[2] == 'history'
+
+def get_history(com, req):
+	'''Report history of hours and tickets across all users.'''
+	f = "gethistory"
+	if req.method != 'GET':
+		error(req, "%s: expected a GET" % f)
+	
+	a = req.path_info.strip('/').split('/')
+	user = a[1]
+
+	db = com.env.get_db_cnx()
+	history = lookup_history(db)
+
+	#for (owner, tid, est, act, velocity) in history:
+	data = "\n".join(["%-10s %6d %5.2f %5.2f %5.2f" % h for h in history])
 	req.send_response(200)
 	req.send_header('Content-Type', 'plain/text')
 	req.send_header('Content-Length', len(data))
@@ -1071,6 +1215,62 @@ def post_status(com, req):
 		raise RequestDone
 	else:
 		error(req, "Internal error.")
+
+def is_shipdate(req):
+	'''
+		/ebs/mark/shipdate
+		/ebs/mark/shipdate/
+	'''
+	a = req.path_info.strip('/').split('/')
+	return len(a) == 3 and a[2] == 'shipdate'
+
+def get_shipdate(com, req):
+	'''Report shipdate of hours and tickets across all users.'''
+	f = "getshipdate"
+	if req.method != 'GET':
+		error(req, "%s: expected a GET" % f)
+	
+	a = req.path_info.strip('/').split('/')
+	user = a[1]
+
+	db = com.env.get_db_cnx()
+	cursor = db.cursor()
+
+	history = lookup_history()
+	todo = lookup_milestone_tickets(milestone)
+
+	pdf_data, dev_data = ebs.history_to_plotdata(history, todo)
+	pdf_plot = plotter.pdf(pdf_data)
+	dev_plot = plotter.box_and_whisker(dev_data)
+
+	q5 = plotter.percentile(pdf_data, 5)
+	q50 = plotter.percentile(pdf_data, 50)
+	q95 = plotter.percentile(pdf_data, 95)
+
+	a = []
+	a.append("Probability Density of Ship Date")
+	a.append("-------------------------------------")
+	a.append("")
+	a.append(pdf_plot)
+	a.append("")
+	a.append("       5'th percentile = %s" % q5)
+	a.append("      50'th percentile = %s" % q50)
+	a.append("      95'th percentile = %s" % q95)
+	a.append("")
+	a.append("")
+	a.append("Distribution of Developer Ship Dates")
+	a.append("-------------------------------------")
+	a.append("")
+	a.append(dev_plot)
+	a.append("")
+
+	data = "\n".join(a)
+	req.send_response(200)
+	req.send_header('Content-Type', 'plain/text')
+	req.send_header('Content-Length', len(data))
+	req.write(data)
+	req.write('\n')
+	raise RequestDone
 
 
 if __name__ == '__main__':
