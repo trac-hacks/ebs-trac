@@ -1,7 +1,20 @@
 A plug-in that enables evidence-based scheduling in Trac.
 
 	Created: Thu Aug 12 15:47:00 EDT 2010
-	Status : Testing logging of hours and listing tickets.
+	Status : 
+		Done	Logging time
+		Done	Listing tickets
+		Test	Clock in / clock out
+		Test	Schedule graphs.
+
+	NOTE:
+
+	I have not audited the code to confirm that malicious input won't
+	break stuff.  We are using it in a trusted environment.
+
+	(The logic does check that the user that has authenticated (via
+	HTTPS), is the owner of the ticket before allowing data to be
+	inserted.)
 
 
 CONTENTS
@@ -9,6 +22,7 @@ CONTENTS
 	INSTALLING THE CLIENT
 	INSTALLING THE PLUGIN
 	FILES IN THIS PROJECT
+	OTHER PROJECTS
 
 
 
@@ -18,6 +32,8 @@ DEPENDENCIES
 	but hopefully it will work any subsequent version.  It doesn't
 	do anything very tricky, just uses the RequestHandler interface
 	and custom ticket fields.
+
+	The server needs gnuplot-py installed.
 
 	To use the command-line client utilities, you need to have
 	curl and python installed.
@@ -32,11 +48,9 @@ INSTALLING THE CLIENT
 		MANDIR=/usr/local/share/man
 		BINDIR=/usr/local/bin
 
-	and edit if necessary.	MANDIR is where your system reads man
-	pages from and BINDIR is where your system stores executables.
+	and edit if necessary.
 
-	Once you have verified those variables, install the client
-	utilities and their man pages by typing:
+	Next, install the client utilities and their man pages:
 
 		$ sudo make install-client
 
@@ -73,21 +87,27 @@ INSTALLING THE PLUGIN
 	If you are running trac as a FastCGI daemon, you'll
 	have to kill then restart the daemon.	
 
+OTHER PROJECTS
 
+	FogBugz
+	www.fogcreek.com/fogbugz
 
-FILES IN THIS PROJECT
+		The canonical EBS app.
 
-	./dat/
-		Files that tracked time spent developing this plugin.
+	Pivitol Tracker
+	http://pivotaltracker.com
 
-	./dat/est.txt
-		Tasks and their time estimates, in minutes.
+		"Tracker is a free, award winning, agile project
+		management tool that enables real time collaboration
+		around a shared, prioritzed backlog."
 
-	./dat/act.txt
-		Actual time spent working, in minutes.
+		They use velocity, but it's based on task points,
+		not hours.  Also, some of their task types ("Bugs",
+		"Chores", etc) don't get points.  Cool UI though.
 
-	./py/
-		Python sources.
-
-	./bin/
-		Shell scripts.
+		For me, using hours is key as it connects to the
+		timesheet.  If you want process control around the
+		development process, you have to track.  People want
+		to get paid for their time, so providing a connection
+		to a timesheet seems like the simplest way.  (Assuming
+		timesheets are used to generate payroll!)
