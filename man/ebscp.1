@@ -41,10 +41,6 @@ would be the ticket.  (See EXAMPLES section below for a specific example.)
 The default resource is 
 .Nm clock .
 .Pp
-If the copy succeeds, the output of
-.Nm
-is OK.
-.Pp
 For ticket resources, you must be the owner of the ticket.
 .Pp
 The supported resources are:
@@ -106,12 +102,12 @@ or
 Add 15 minutes to your total hours worked on ticket number 10.
 .Pp
 .Dl $ ebscp .25 ticket/10/hours
-.Dl OK$ 
+.Dl OK
 .Pp
 Close ticket 15.
 .Pp
 .Dl $ ebscp closed ticket/15/status
-.Dl OK$ 
+.Dl OK
 .Pp
 Start time clock running on ticket 896.
 .Pp
@@ -130,6 +126,15 @@ We're done, stop clock on this ticket.
 .Dl $ ebscp stop 896
 .Dl https://example.com/ebs/mark/clock/896?data=stop:
 .Dl Logged 0.462 hours to ticket 896
+.Pp
+Whoops, I forgot the clock was running!
+.Pp
+.Dl $ ebscp start 961
+.Dl https://example.com/ebs/mark/clock/961?data=start:
+.Dl Logged 0.307 hours to ticket 896, and started clock for ticket 961.
+.Dl $ ebscp -0.307 ticket/896/hours
+.Dl https://example.com/ebs/mark/ticket/896/hours?data=-0.307
+.Dl OK
 .Sh BUGS
 .Pp
 The method for keeping track of the current time clock state is a hack.
