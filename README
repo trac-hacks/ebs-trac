@@ -33,8 +33,6 @@ DEPENDENCIES
 	do anything very tricky, just uses the RequestHandler interface
 	and custom ticket fields.
 
-	The server needs gnuplot-py installed.
-
 	To use the command-line client utilities, you need to have
 	curl and python installed.
 
