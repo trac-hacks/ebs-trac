@@ -682,11 +682,13 @@ def update_clocktext(com, db, cursor, user, ip, data):
 	     )
 	version = initial_trac_wiki_version
 	row = cursor.fetchone()
-	if row:
-		version = int(row[0]) + 1
+	version = row[0]
 
 	ok = True
-	try:
+	
+	if not version:
+		# First time, insert page record.
+
 		sql = "INSERT INTO wiki ("	\
 			"name, "	\
 			"version, "	\
@@ -704,6 +706,7 @@ def update_clocktext(com, db, cursor, user, ip, data):
 			"%s, "	\
 			"%s "	\
 		    ")"
+		
 		params = (
 		    magicname,
 		    version,
@@ -713,6 +716,17 @@ def update_clocktext(com, db, cursor, user, ip, data):
 		    text,
 		    1
 		    )
+	else:
+		# To avoid having a zillion revisions for this one wiki
+		# page, we keep re-using version 1.
+		sql = \
+		    "UPDATE wiki SET "	\
+			"text = %s "	\
+		    "WHERE "	\
+			"name = %s AND version = %s"
+		params = (text, magicname, version)
+
+	try:
 		cursor.execute(sql, params)
 		db.commit()
 	except Exception, e:
@@ -720,9 +734,6 @@ def update_clocktext(com, db, cursor, user, ip, data):
 		efmt = "%s: %s, sql=%s, params=%s"
 		com.log.error(efmt % (f, e, sql, params))
 		ok = False
-
-	if ok:
-		com.log.info("updated %s to version %d" % (magicname, version))
 
 	return ok
 
