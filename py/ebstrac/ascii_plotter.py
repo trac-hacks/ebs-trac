@@ -40,18 +40,6 @@ def gnuplot_wrapper(plotcommands):
 
 	return l1
 
-def percentile(pdf_data, n):
-	'''
-	Given list of (x,y) tuples, compute the n'th percentile of the
-	y-values.
-
-	'''
-
-	raise "plotter.percentile() not implemented."
-
-	return None
-
-	
 def pdf(pdf_data):
 	'''
 	Plot a probability density function.
@@ -63,9 +51,30 @@ def pdf(pdf_data):
 	Return plot as a string.
 	'''
 
-	raise "plotter.pdf() is not implemented"
+	if not pdf_data:
+		return "No data to plot"
 
-	return ''
+	mindt = pdf_data[0][0]
+	maxdt = pdf_data[-1][0]
+
+	cmds = 'set terminal dumb\n' \
+	    '\n' \
+	    'set xdata time\n' \
+	    'set timefmt "%%Y-%%m-%%d"\n' \
+	    'set format x "%%m-%%d"\n' \
+	    'set xtics out nomirror\n' \
+	    'unset ytics\n' \
+	    'unset title\n' \
+	    'unset key\n' \
+	    'set yrange [0:100]\n' \
+	    'set xrange ["%s":"%s"]\n' \
+	    'plot "-" using 1:2 pt 24\n' \
+	    % (mindt, maxdt)
+
+	for x, y in pdf_data:
+		cmds += "%s %s\n" % (x, y)
+
+	return gnuplot_wrapper(cmds)
 
 def box_and_whisker(dev_data):
 	'''

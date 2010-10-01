@@ -19,7 +19,7 @@
 # XXX: Audit that malicious input is handled properly.
 
 from time import time, localtime, strftime, mktime, strptime
-from datetime import date
+from datetime import date, timedelta
 import urllib
 
 # Hack so unit tests run if Trac not installed.
@@ -1364,29 +1364,34 @@ def get_shipdate(com, req):
 
 	pdf_data, dev_data = ebs.history_to_plotdata(history, todo, timecards)
 	pdf_plot = plotter.pdf(pdf_data)
-	dev_plot = plotter.box_and_whisker(dev_data)
 
-	q5 = plotter.percentile(pdf_data, 5)
-	q50 = plotter.percentile(pdf_data, 50)
-	q95 = plotter.percentile(pdf_data, 95)
+	mindt = pdf_data[0][0]
+	days = [(dt - mindt).days for dt, density in pdf_data]
+	q05 = mindt + timedelta(ebs.percentile(days, 0.05))
+	q50 = mindt + timedelta(ebs.percentile(days, 0.50))
+	q95 = mindt + timedelta(ebs.percentile(days, 0.95))
 
+	
 	a = []
 	a.append("Probability Density of Ship Date")
 	a.append("-------------------------------------")
 	a.append("")
 	a.append(pdf_plot)
 	a.append("")
-	a.append("       5'th percentile = %s" % q5)
+	a.append("       5'th percentile = %s" % q05)
 	a.append("      50'th percentile = %s" % q50)
 	a.append("      95'th percentile = %s" % q95)
 	a.append("")
 	a.append("")
-	a.append("Distribution of Developer Ship Dates")
-	a.append("-------------------------------------")
-	a.append("")
-	a.append(dev_plot)
-	a.append("")
-	a.append("")
+
+	#dev_plot = plotter.box_and_whisker(dev_data)
+
+	#a.append("Distribution of Developer Ship Dates")
+	#a.append("-------------------------------------")
+	#a.append("")
+	#a.append(dev_plot)
+	#a.append("")
+	#a.append("")
 
 	data = "\n".join(a)
 	req.send_response(200)

@@ -197,6 +197,13 @@ def list_to_pdf(list):
 	return tuple(pdf)
 
 def percentile(a, p):
+	'''
+	Given a list of elements, return the percentile.
+
+		>>> percentile( (1,2,3), 0.50)
+		2
+	'''
+
 	n = len(a)
 	i = int(n * p)
 	if abs((n * p) - i) < 0.000001:
@@ -377,7 +384,7 @@ def history_to_plotdata(history, todo, timecards):
 	dev_to_velocities = history_to_dict(history)
 
 	# How many Markov trials do we run.
-	trials_n = 1000
+	trials_n = 100
 
 	startdt = date.today()
 	shipdates = []
