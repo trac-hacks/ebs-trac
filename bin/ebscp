@@ -12,15 +12,14 @@ url=clock
 if [ "x$2" != "x" ]; then
 	url=$2
 fi
+data=$1
 
 # If URL is just a number, assume it's a ticket # and we are
 # working with the time clock.
-n=$(echo $url | tr -d [:digit:])
+n=$(echo $url | sed "s/[0-9]*//g")
 if [ "$n" = "" ] ; then
 	url=clock/$url
 fi
-
-data=$1
 
 . ~/.ebsconf
 
