@@ -185,6 +185,94 @@ def is_log(req):
 	a = req.path_info.strip('/').split('/')
 	return len(a) == 3 and a[2] == 'log'
 
+def lookup_timecards(db):
+	'''
+	Look through ticket_change table and pull hours worked
+	by day by user.
+
+	Total hours worked by each user on each day, and return a list of
+	(user, day, hours) tuples.
+	'''
+
+	cursor = db.cursor()
+	cursor1 = db.cursor()
+
+	sql =					\
+	    "SELECT "				\
+	        "author, "			\
+	        "ticket, "			\
+		"time, "			\
+		"oldvalue, "			\
+		"newvalue "			\
+	    "FROM "				\
+		"ticket_change "		\
+	    "WHERE " 				\
+	        "field = 'actualhours' "	\
+	    "ORDER BY "				\
+		"time"
+	cursor.execute(sql)
+
+	d = {}
+	for row in cursor.fetchall():
+		# Split here, not in for in case fetchall() returns nothing.
+		user, tid, epoch_seconds, oldvalue, newvalue = row
+
+		#
+		# After installing ebstrac plugin, when I closed old
+		# tickets they got 'actualhours' ticket_change records
+		# where both the old and the new value were empty.
+		# These records raised a TypeError when trying to convert
+		# to a float.
+		#
+
+		if not oldvalue and not newvalue:
+			continue
+
+		v0 = float(oldvalue)
+		v1 = float(newvalue)
+		hours = v1 - v0
+
+		# Hours that are booked to a different date have the
+		# actual date stored in the related comment field.
+
+		sql = 					\
+		    "SELECT "				\
+			"newvalue "			\
+		    "FROM "				\
+			"ticket_change " 		\
+		    "WHERE "				\
+			"author = %s AND "		\
+		        "field = 'comment' AND "	\
+		        "time = %s AND "		\
+		        "newvalue LIKE 'posted on %'"
+		cursor1.execute(sql, (user, local_epoch_seconds))
+		row = cursor1.fetchone()
+		if row:
+			# 'posted on 1285010611, applied to 2010-09-09'
+			a1 = row[0].split()
+			s = a1[-1]
+			year, month, day = map(int, s.split('-'))
+			dt = Date(year, month, day)
+		else:
+			dt = Date.fromtimestamp(epoch_seconds)
+
+		try:
+			d[user, dt] += hours
+		except KeyError:
+			d[user, dt] = hours
+
+	if not d:
+		return ()
+
+	a = []
+	for (user, dt), hours in d.items():
+		a.append( (user, dt, hours) )
+
+	return sorted(a, 
+	    key = lambda x: x[0].lower() + x[1].strftime("%Y%m%d")
+	    )
+
+
 def get_log(com, req):
 	'''Lookup all hours logged by user against all tickets.'''
 	f = "getlog"
@@ -1238,8 +1326,9 @@ def get_shipdate(com, req):
 
 	history = lookup_history()
 	todo = lookup_milestone_tickets(milestone)
+	timecards = lookup_timecards()
 
-	pdf_data, dev_data = ebs.history_to_plotdata(history, todo)
+	pdf_data, dev_data = ebs.history_to_plotdata(history, todo, timecards)
 	pdf_plot = plotter.pdf(pdf_data)
 	dev_plot = plotter.box_and_whisker(dev_data)
 
@@ -1263,6 +1352,7 @@ def get_shipdate(com, req):
 	a.append("")
 	a.append(dev_plot)
 	a.append("")
+	a.append("")
 
 	data = "\n".join(a)
 	req.send_response(200)
@@ -1271,7 +1361,6 @@ def get_shipdate(com, req):
 	req.write(data)
 	req.write('\n')
 	raise RequestDone
-
 
 if __name__ == '__main__':
 	testing = True

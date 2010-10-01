@@ -11,6 +11,10 @@ install: py/dist/ebstrac-*.egg
 	easy_install py/dist/ebstrac-*.egg
 
 
+test:
+	python py/ebstrac/handlers.py
+	python py/ebstrac/ebs.py
+
 install-client: \
 		$(MANDIR)/man1/ebsls.1 \
 		$(MANDIR)/man1/ebscp.1 \
