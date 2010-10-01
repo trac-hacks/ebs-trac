@@ -377,7 +377,7 @@ def history_to_plotdata(history, todo, timecards):
 	dev_to_velocities = history_to_dict(history)
 
 	# How many Markov trials do we run.
-	trials_n = 100
+	trials_n = 1000
 
 	startdt = date.today()
 	shipdates = []
