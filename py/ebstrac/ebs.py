@@ -42,7 +42,35 @@ def advance_n_workdays(dt0, n, daysoff = (5,6)):
 
 		>>> advance_n_workdays(dt0, 5)
 		datetime.date(2010, 9, 10)
+
+	We can use this to advance to the first work day if the current
+	day falls on a weekend.
+
+		>>> dt0 = date(2010, 9, 4)  # Saturday
+		>>> advance_n_workdays(dt0, 0)
+		datetime.date(2010, 9, 6)
+
+	Note that to be consistent, this means that if we want to
+	advance one work day from a Saturday, we end up on a Tuesday.
+
+		>>> dt0 = date(2010, 9, 4)  # Saturday
+		>>> advance_n_workdays(dt0, 1)
+		datetime.date(2010, 9, 7)
 	'''
+
+	#
+	# We start counting on the first work day.  If the start date
+	# passed in is not a work day, then advance to the first one.
+	#
+
+	looplimit = 8
+	i = 0
+	while dt0.weekday() in daysoff:
+		i += 1
+		dt0 += timedelta(1)
+		if i > looplimit:
+			raise ValueError("Logic error, looping forever.")
+
 
 	day_n = 1
 	workday_n = 0
@@ -56,7 +84,7 @@ def advance_n_workdays(dt0, n, daysoff = (5,6)):
 
 def availability_from_timecards(timecards):
 	'''
-	Compute average hours available per weekday per user.
+	Compute average hours available per weekday per dev.
 
 			   September 2010   
 			Su Mo Tu We Th Fr Sa
@@ -87,29 +115,29 @@ def availability_from_timecards(timecards):
 	totalhours = {}
 	firstday = {}
 	lastday = {}
-	for user, dt, hours in timecards:
+	for dev, dt, hours in timecards:
 		try:
-			if lastday[user] < dt:
-				lastday[user] = dt
+			if lastday[dev] < dt:
+				lastday[dev] = dt
 		except KeyError:
-			lastday[user] = dt
+			lastday[dev] = dt
 		try:
-			if dt < firstday[user]:
-				firstday[user] = dt
+			if dt < firstday[dev]:
+				firstday[dev] = dt
 		except KeyError:
-			firstday[user] = dt
+			firstday[dev] = dt
 		try:
-			totalhours[user] += hours
+			totalhours[dev] += hours
 		except KeyError:
-			totalhours[user] = hours
+			totalhours[dev] = hours
 
 	averages = {}
-	for user in totalhours.keys():
-		dt0 = firstday[user]
-		dt1 = lastday[user]
+	for dev in totalhours.keys():
+		dt0 = firstday[dev]
+		dt1 = lastday[dev]
 		n = len(list(count_workdays(dt0, dt1)))
 		if n > 0:
-			averages[user] = totalhours[user]/float(n)
+			averages[dev] = totalhours[dev]/float(n)
 
 	return averages
 		
@@ -117,7 +145,7 @@ def availability_from_timecards(timecards):
 def history_to_dict(history):
 	'''
 	Turn history tuples into a dictionary where we can lookup the
-	list of velocities for a given user.
+	list of velocities for a given dev.
 
 		>>> history = (
 		... ('mark', 1, 1.0, 1.0, 1.0),
@@ -130,37 +158,41 @@ def history_to_dict(history):
 		return {}
 
 	d = {}
-	for user, ticket, estimated_hours, actual_hours, velocity in history:
-		if not d.has_key(user):
-			d[user] = []
-		d[user].append(velocity)
+	for dev, ticket, estimated_hours, actual_hours, velocity in history:
+		if not d.has_key(dev):
+			d[dev] = []
+		d[dev].append(velocity)
 	return d
 
-def pdf_from_shipdatelist(shipdates, trials_n):
+def list_to_pdf(list):
 	'''
-	Given a list of ship dates, return the probability density
-	function for that list.
+	Given a list dates, return the probability density function.
 
-	The return value is a tuple of (dt, probability_density) tuples.
+	The return value is (element, probability_density) tuples.
 	We represent the density as the closest integer percentage.
+
+		>>> list_to_pdf( (3, 1, 1, 2) )
+		((1, 50), (2, 75), (3, 100))
 	'''
+
+	trials_n = len(list)
 
 	count = {}
-	for dt in shipdates:
+	for x in list:
 		try:
-			count[dt] += 1
+			count[x] += 1
 		except KeyError:
-			count[dt] = 1
+			count[x] = 1
 	a = []
-	for dt, n in count.items():
-		a.append( (dt,  n / float(trials_n)) )
+	for x, n in count.items():
+		a.append( (x,  n / float(trials_n)) )
 	a = sorted(a, key = lambda x: x[0])
 	pdf = []
 	density = 0.0
-	for dt, probability  in a:
+	for x, probability  in a:
 		density += probability
 		percentage = int(0.5 + density * 100.0)
-		pdf.append( (dt, percentage) )
+		pdf.append( (x, percentage) )
 
 	return tuple(pdf)
 
@@ -246,10 +278,9 @@ def quartiles(a):
 
 	return percentile(a, 0.25), percentile(a, 0.50), percentile(a, 0.75)
 	
-def devquartiles_from_devshipdates(dev_shipdates, trials_n):
+def devquartiles_from_labordays(dev_labordays, trials_n):
 	'''
-	Compute developer quartiles from a dictionary of shipdate
-	lists.  
+	Compute descriptive statistics for each developer's ship date.
 
 	Return value is
 	
@@ -258,20 +289,26 @@ def devquartiles_from_devshipdates(dev_shipdates, trials_n):
 			('b', min_b, q1_b, q2_b, q3_b ,max_b),
 		)
 	
-	where:
+	where stats are on ship date:
 	
 		q1 = first quartile (25'th percentile)
 		q2 = second quartile (50'th percentile, or median)
 		q3 = third quartile (75'th percentile)
+
+	Note that the input to this routine is labordays so we can
+	compute descriptive stats without worrying about days off.
+	Once we have the stats, we convert to working days.
 	'''
 
 	seconds_per_halfday = 60 * 60 * 24 / 2
 	rval = []
-	for dev, shipdatelist in dev_shipdates.items():
-		pdf = pdf_from_shipdatelist(shipdatelist, trials_n)
+	for dev, labordays in dev_labordays.items():
+		pdf = list_to_pdf(labordays)
 		min = pdf[0][0]
-		days = [(dt - min).days for dt, density in pdf]
 		max = pdf[-1][0]
+
+		daysleft = [daysleft for daysleft, density in pdf]
+		td1, td2, td3 = map(timedelta, quartiles(daysleft))
 
 		#
 		# Adding a timedelta of 82,800 seconds (23 hours worth)
@@ -280,7 +317,6 @@ def devquartiles_from_devshipdates(dev_shipdates, trials_n):
 		# delta's returned by quartiles(), as they may be floats.
 		#
 
-		td1, td2, td3 = map(timedelta, quartiles(days))
 		if td1.seconds > seconds_per_halfday:
 			td1 = td1 + timedelta(1)
 		if td2.seconds > seconds_per_halfday:
@@ -288,7 +324,18 @@ def devquartiles_from_devshipdates(dev_shipdates, trials_n):
 		if td3.seconds > seconds_per_halfday:
 			td3 = td3 + timedelta(1)
 
-		q1, q2, q3 = [min + t for t in td1, td2, td3]
+		#
+		# Now that we have the number of labordays required to
+		# each quartile, we can convert to work days, to put in
+		# terms of shipping date.
+		#
+
+		today = date.today()
+		min = advance_n_workdays(today, min)
+		q1 = advance_n_workdays(today, td1.days)
+		q2 = advance_n_workdays(today, td2.days)
+		q3 = advance_n_workdays(today, td3.days)
+		max = advance_n_workdays(today, max)
 
 		rval.append( (dev, min, q1, q2, q3, max), )
 
@@ -299,15 +346,15 @@ def history_to_plotdata(history, todo, timecards):
 	'''
 	History is a list of 
 
-		(user, ticket, estimated_hours, actual_hours, velocity)
+		(dev, ticket, estimated_hours, actual_hours, velocity)
 
 	tuples.
 
-	Todo is a list of (user, ticket, est_hrs, act_hrs, todo_hrs)
+	Todo is a list of (dev, ticket, est_hrs, act_hrs, todo_hrs)
 	tuples.
 
-	Timecards is a list of (user, date, total_hours) tuples.  One
-	entry for each unique user/date combination.
+	Timecards is a list of (dev, date, total_hours) tuples.  One
+	entry for each unique dev/date combination.
 
 	Given this data, we run 1,000 rounds of a Monte Carlo simulation.
 	Each round generates one ship date.  We take all 1,000 ship dates,
@@ -325,7 +372,7 @@ def history_to_plotdata(history, todo, timecards):
 	See ebs.txt for the unit tests.
 	'''
 
-	user_to_dailyworkhours = availability_from_timecards(timecards)
+	dev_to_dailyworkhours = availability_from_timecards(timecards)
 
 	user_to_velocities = history_to_dict(history)
 
@@ -334,45 +381,53 @@ def history_to_plotdata(history, todo, timecards):
 
 	startdt = date.today()
 	shipdates = []
-	dev_shipdates = {}
+	dev_to_daysleftlist = {}
 	for trial_i in range(trials_n):
 
-		# How many hours of work does each user have?  Use randomly
+		# How many hours of work does each dev have?  Use randomly
 		# selected velocity to estimate this.
-		user_to_hours = {}
-		for user, ticket, est, act, left in todo:
-			v = random.choice(user_to_velocities[user])
+		dev_to_hrsleft = {}
+		for dev, ticket, est, act, left in todo:
+			v = random.choice(user_to_velocities[dev])
+			hrsleft = v * (est - act)
+			if hrsleft < 0.0:
+				efmt = "don't support tickets with "\
+				    "actual > estimate.  ticket #%s, "\
+				    "act=%.2f, est=%.2f, velocity=%.2f"
+				raise ValueError(efmt % (ticket, act, est, v))
 			try:
-				user_to_hours[user] += v * (est - act)
+				dev_to_hrsleft[dev] += hrsleft
 			except KeyError:
-				user_to_hours[user] = v * (est - act)
+				dev_to_hrsleft[dev] = hrsleft
 
-		# How many days of work left does each user have?
+		# How many days of work left does each dev have?
 		# Use number of hours per day each dev works on average.
-		user_to_days = {}
-		for user, hours in user_to_hours.items():
-			user_to_days[user] = hours/user_to_dailyworkhours[user]
-
-		for user, days in user_to_days.items():
-			if not dev_shipdates.has_key(user):
-				dev_shipdates[user] = []
-			dev_shipdate = advance_n_workdays(startdt, days)
-			dev_shipdates[user].append(dev_shipdate)
+		dev_to_daysleft = {}
+		for dev, hrs in dev_to_hrsleft.items():
+			daysleft = hrs/dev_to_dailyworkhours[dev]
+			dev_to_daysleft[dev] = daysleft
+			if not dev_to_daysleftlist.has_key(dev):
+				dev_to_daysleftlist[dev] = []
+			dev_to_daysleftlist[dev].append(daysleft)
 
 		# Find max # of work days left across all devs.
-		labordays_till_done = max(user_to_days.values())
+		labordays_till_done = max(dev_to_daysleft.values())
 
+		#
 		# Convert labor days to calendar days.  This is ship date.
+		# 
+		# We keep developer day in raw (that is, non-calendar)
+		# days because that what we need to compute median and
+		# other descriptive stats.  Once the stats are computed,
+		# then we convert to calendar.
+		#
+
 		shipdate = advance_n_workdays(startdt, labordays_till_done)
 		shipdates.append(shipdate)
 
-	#
-	# Compute PDF
-	#
+	pdf = list_to_pdf(shipdates)
 
-	pdf = pdf_from_shipdatelist(shipdates, trials_n)
-
-	devs = devquartiles_from_devshipdates(dev_shipdates, trials_n)
+	devs = devquartiles_from_labordays(dev_to_daysleftlist, trials_n)
 
 	return pdf, devs
 
