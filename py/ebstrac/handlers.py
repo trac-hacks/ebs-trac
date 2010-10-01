@@ -19,6 +19,8 @@
 # XXX: Audit that malicious input is handled properly.
 
 from time import time, localtime, strftime, mktime, strptime
+from datetime import date
+import urllib
 
 # Hack so unit tests run if Trac not installed.
 testing = False
@@ -38,12 +40,13 @@ import ascii_plotter as plotter
 magicname='EvidenceBasedSchedulingTimeClockPage'
 
 def error(req, data):
+	if data[-1] != '\n':
+		data += '\n'
 	req.send_response(400)
 	req.send_header('Content-Type', 'plain/text')
 	req.send_header('Content-Length', len(data))
 	req._send_cookie_headers()
 	req.write(data)
-	req.write('\n')
 	raise RequestDone
 
 def user_must_own_ticket(req, cursor, tid, user):
@@ -243,16 +246,16 @@ def lookup_timecards(db):
 		        "field = 'comment' AND "	\
 		        "time = %s AND "		\
 		        "newvalue LIKE 'posted on %'"
-		cursor1.execute(sql, (user, local_epoch_seconds))
+		cursor1.execute(sql, (user, epoch_seconds))
 		row = cursor1.fetchone()
 		if row:
 			# 'posted on 1285010611, applied to 2010-09-09'
 			a1 = row[0].split()
 			s = a1[-1]
 			year, month, day = map(int, s.split('-'))
-			dt = Date(year, month, day)
+			dt = date(year, month, day)
 		else:
-			dt = Date.fromtimestamp(epoch_seconds)
+			dt = date.fromtimestamp(epoch_seconds)
 
 		try:
 			d[user, dt] += hours
@@ -294,7 +297,7 @@ def get_log(com, req):
 	a = []
 	sum = 0
 	for row in cursor.fetchall():
-		(tid, local_epoch_seconds, oldvalue, newvalue) = row
+		(tid, epoch_seconds, oldvalue, newvalue) = row
 
 		#
 		# After installing ebstrac plugin, when I closed old tickets
@@ -318,14 +321,14 @@ def get_log(com, req):
 		    + "AND field = 'comment' " \
 		    + "AND time = %s " \
 		    + "AND newvalue LIKE 'posted on %'"
-		cursor1.execute(sql, (user, local_epoch_seconds))
+		cursor1.execute(sql, (user, epoch_seconds))
 		row = cursor1.fetchone()
 		if row:
 			# 'posted on 1285010611, applied to 2010-09-09'
 			a1 = row[0].split()
 			dt = a1[-1]
 		else:
-			tm = localtime(local_epoch_seconds)
+			tm = localtime(epoch_seconds)
 			dt ="%04d-%02d-%02d" % (tm[0], tm[1], tm[2])
 		#a.append("%d\t%s\t%.3f" % (tid, dt, hours))
 		a.append((tid, dt, hours))
@@ -1320,27 +1323,44 @@ def post_status(com, req):
 
 def is_shipdate(req):
 	'''
-		/ebs/mark/shipdate
-		/ebs/mark/shipdate/
+		/ebs/mark/shipdate/Event%20Demo
+		/ebs/mark/shipdate/Event%20Demo/
 	'''
 	a = req.path_info.strip('/').split('/')
-	return len(a) == 3 and a[2] == 'shipdate'
+	return len(a) == 4 and a[2] == 'shipdate'
 
 def get_shipdate(com, req):
 	'''Report shipdate of hours and tickets across all users.'''
-	f = "getshipdate"
+	f = "get_shipdate"
 	if req.method != 'GET':
 		error(req, "%s: expected a GET" % f)
 	
 	a = req.path_info.strip('/').split('/')
 	user = a[1]
+	milestone = a[3]
 
 	db = com.env.get_db_cnx()
 	cursor = db.cursor()
 
-	history = lookup_history()
-	todo = lookup_milestone_tickets(milestone)
-	timecards = lookup_timecards()
+	if not milestone:
+		error(req, 'Invalid URL, no milestone given.')
+
+	# Use unquote_plus() so we can use the plus sign for spaces.
+	milestone = urllib.unquote(milestone)
+
+	todo = lookup_todo(db, milestone)
+
+	if not todo:
+		data = "No tasks assigned to Milestone '%s'\n" % milestone
+		req.send_response(200)
+		req.send_header('Content-Type', 'plain/text')
+		req.send_header('Content-Length', len(data))
+		req.write(data)
+		raise RequestDone
+
+	history = lookup_history(db)
+	timecards = lookup_timecards(db)
+
 
 	pdf_data, dev_data = ebs.history_to_plotdata(history, todo, timecards)
 	pdf_plot = plotter.pdf(pdf_data)

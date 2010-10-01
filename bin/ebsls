@@ -18,7 +18,10 @@ fi
 
 . ~/.ebsconf
 
-u=$protocol://$host/$urlprefix/$url
+# quote url, so spaces are change to %20.
+quotedurl=$(python -c "import urllib; print urllib.quote('''$url''')")
+
+u=$protocol://$host/$urlprefix/$quotedurl
 echo "$u:" 
 
 # -k option because my SSL cert is self-signed, old, for wrong domain.
