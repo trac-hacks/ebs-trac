@@ -35,7 +35,6 @@ except ImportError:
 import ebs
 import ascii_plotter as plotter
 
-
 magicname='EvidenceBasedSchedulingTimeClockPage'
 
 def error(req, data):
@@ -46,7 +45,6 @@ def error(req, data):
 	req.write(data)
 	req.write('\n')
 	raise RequestDone
-
 
 def user_must_own_ticket(req, cursor, tid, user):
 	'''Return True or False.'''
@@ -904,9 +902,25 @@ def update_clocktext(com, db, cursor, user, ip, data):
 	initial_trac_wiki_version = 1
 
 	#
-	#	data = ( (uid1, tid1, dt1, tm1), (uid2, tid2, dt2, tm2), ...)
+	#  data = ( (uid1, tid1, dt1, tm1), (uid2, tid2, dt2, tm2), ...)
+	# 
+	# This next step was fragile on initial deployment ("not enough
+	# args for format string"), so do it less Pythonically so we
+	# can put good info in error message for debugging.
+	#
 
-	text = "\r".join(["%s %d %s %s" % row for row in data])
+ 	#text = "\r".join(["%s %d %s %s" % row for row in data])
+
+	a = []
+	for row in data:
+		try:
+			a.append("%s %d %s %s" % row)
+		# TypeError catches both not enough args and type errors,
+		# like trying to print a string with a '%d' format.
+		except TypeError, te:
+			efmt = "update_clocktext failed: %s raised %s"
+			error(efmt % (str(row), te))
+	text = "\r".join(a)
 
         cursor.execute(
 	    "SELECT max(version) FROM wiki WHERE name = %s GROUP BY name",
