@@ -158,7 +158,7 @@ def history_to_dict(history):
 		return {}
 
 	d = {}
-	for dev, ticket, estimated_hours, actual_hours, velocity in history:
+	for dev, ticket, est, act, velocity in history:
 		if not d.has_key(dev):
 			d[dev] = []
 		d[dev].append(velocity)
@@ -374,7 +374,7 @@ def history_to_plotdata(history, todo, timecards):
 
 	dev_to_dailyworkhours = availability_from_timecards(timecards)
 
-	user_to_velocities = history_to_dict(history)
+	dev_to_velocities = history_to_dict(history)
 
 	# How many Markov trials do we run.
 	trials_n = 100
@@ -388,8 +388,11 @@ def history_to_plotdata(history, todo, timecards):
 		# selected velocity to estimate this.
 		dev_to_hrsleft = {}
 		for dev, ticket, est, act, left in todo:
-			v = random.choice(user_to_velocities[dev])
-			hrsleft = v * (est - act)
+			# velocity = est/actual.
+			# new est. = est / v
+			v = random.choice(dev_to_velocities[dev])
+			hrsleft = (est - act)/v
+
 			if hrsleft < 0.0:
 				efmt = "don't support tickets with "\
 				    "actual > estimate.  ticket #%s, "\
@@ -434,4 +437,4 @@ def history_to_plotdata(history, todo, timecards):
 if __name__ == '__main__':
 	import doctest
 	doctest.testmod()
-	doctest.testfile('ebs.txt')
+	doctest.testfile('t.txt')
