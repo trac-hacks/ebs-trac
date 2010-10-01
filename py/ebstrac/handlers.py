@@ -884,7 +884,7 @@ def lookup_clocktext(cursor):
 	else:
 		return None
 	
-def update_clocktext(com, db, cursor, user, ip, data):
+def update_clocktext(com, req, db, cursor, user, ip, data):
 	'''
 	We use wiki page to store current state of time clock for all users.
 
@@ -914,12 +914,12 @@ def update_clocktext(com, db, cursor, user, ip, data):
 	a = []
 	for row in data:
 		try:
-			a.append("%s %d %s %s" % row)
+			a.append("%s %s %s %s" % tuple(row))
 		# TypeError catches both not enough args and type errors,
 		# like trying to print a string with a '%d' format.
 		except TypeError, te:
 			efmt = "update_clocktext failed: %s raised %s"
-			error(efmt % (str(row), te))
+			error(req, efmt % (str(row), te))
 	text = "\r".join(a)
 
         cursor.execute(
@@ -1179,7 +1179,7 @@ def post_clock(com, req):
 
 	# Update the magic wiki page to the next version.
 
-	if not update_clocktext(com, db, cursor, user, req.remote_addr, a):
+	if not update_clocktext(com, req, db, cursor, user, req.remote_addr, a):
 		error(req, 
 		    "Boom!  (Probably some DB issue, check server logs.)")
 
