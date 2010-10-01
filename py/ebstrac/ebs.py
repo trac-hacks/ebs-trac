@@ -136,6 +136,165 @@ def history_to_dict(history):
 		d[user].append(velocity)
 	return d
 
+def pdf_from_shipdatelist(shipdates, trials_n):
+	'''
+	Given a list of ship dates, return the probability density
+	function for that list.
+
+	The return value is a tuple of (dt, probability_density) tuples.
+	We represent the density as the closest integer percentage.
+	'''
+
+	count = {}
+	for dt in shipdates:
+		try:
+			count[dt] += 1
+		except KeyError:
+			count[dt] = 1
+	a = []
+	for dt, n in count.items():
+		a.append( (dt,  n / float(trials_n)) )
+	a = sorted(a, key = lambda x: x[0])
+	pdf = []
+	density = 0.0
+	for dt, probability  in a:
+		density += probability
+		percentage = int(0.5 + density * 100.0)
+		pdf.append( (dt, percentage) )
+
+	return tuple(pdf)
+
+def percentile(a, p):
+	n = len(a)
+	i = int(n * p)
+	if abs((n * p) - i) < 0.000001:
+		q = (a[i] + a[i - 1]) / 2.
+	else:
+		q = a[i]
+	return q
+	
+def quartiles(a):
+	'''
+	Given list of sorted items, return q1, median q3 tuple
+
+	If the list has an odd number of entries, the median is the
+	middle number.
+
+		>>> q = quartiles( (1, 2, 3, 4, 5, 6, 7) )
+		>>> q[1]
+		4
+
+	The first quartile is the element such that at least 25% of the
+	values are less than or equal to it.
+
+		>>> q[0]
+		2
+
+	Likewise, the third quartile is the element such that at least
+	75% of the values are less than or equal to it.
+
+		>>> q[2]
+		6
+
+	Note that 5 doesn't work, because 5/7. = 71%, and the criteria
+	is that at least 75% of the elements are less than or equal to q3.
+
+	Shorter lists also work.
+
+		>>> quartiles( (1,2,3,4,5) )
+		(2, 3, 4)
+
+	Even lists exercise a different logic flow.
+
+		>>> quartiles( (1,2,3,4,5,6) )
+		(2, 3.5, 5)
+
+	The first quartile and third quartile seem incorrect, but they are
+	consistent with the method we are using:
+
+		1. multiply length of list by percentile
+
+			q1		q2		q3
+			----------	-------		----------
+			0.25*6=1.5	0.5*6=3		0.75*6=4.5
+
+		2. if result is a whole number, compute value half-way
+		   between number at that position (one-based) and next
+
+			q1		q2		q3
+			----------	-------		----------
+			n/a       	3+4/2.=3.5	n/a
+	
+		3. otherwise, round up to next int and take value at
+		   that position (again, one-based indexing of list)
+
+			q1		q2		q3
+			----------	-------		----------
+			a[2] = 2	n/a		a[5] =  5
+
+
+	With a list of one entry, they should all come back the same.
+
+		>>> quartiles( (1,))
+		(1, 1, 1)
+
+	With a list of two entries, we should get three different values.
+
+		>>> quartiles( (1,2))
+		(1, 1.5, 2)
+	'''
+
+	return percentile(a, 0.25), percentile(a, 0.50), percentile(a, 0.75)
+	
+def devquartiles_from_devshipdates(dev_shipdates, trials_n):
+	'''
+	Compute developer quartiles from a dictionary of shipdate
+	lists.  
+
+	Return value is
+	
+		(
+			('a', min_a, q1_a, q2_a, q3_a, max_a),
+			('b', min_b, q1_b, q2_b, q3_b ,max_b),
+		)
+	
+	where:
+	
+		q1 = first quartile (25'th percentile)
+		q2 = second quartile (50'th percentile, or median)
+		q3 = third quartile (75'th percentile)
+	'''
+
+	seconds_per_halfday = 60 * 60 * 24 / 2
+	rval = []
+	for dev, shipdatelist in dev_shipdates.items():
+		pdf = pdf_from_shipdatelist(shipdatelist, trials_n)
+		min = pdf[0][0]
+		days = [(dt - min).days for dt, density in pdf]
+		max = pdf[-1][0]
+
+		#
+		# Adding a timedelta of 82,800 seconds (23 hours worth)
+		# to a date does not advance it by one day.  We want to
+		# round to the closest day, so we can't just add the day 
+		# delta's returned by quartiles(), as they may be floats.
+		#
+
+		td1, td2, td3 = map(timedelta, quartiles(days))
+		if td1.seconds > seconds_per_halfday:
+			td1 = td1 + timedelta(1)
+		if td2.seconds > seconds_per_halfday:
+			td2 = td2 + timedelta(1)
+		if td3.seconds > seconds_per_halfday:
+			td3 = td3 + timedelta(1)
+
+		q1, q2, q3 = [min + t for t in td1, td2, td3]
+
+		rval.append( (dev, min, q1, q2, q3, max), )
+
+	return tuple(rval)
+	
+
 def history_to_plotdata(history, todo, timecards):
 	'''
 	History is a list of 
@@ -170,27 +329,52 @@ def history_to_plotdata(history, todo, timecards):
 
 	user_to_velocities = history_to_dict(history)
 
-	# How many hours left does each user have?
-	user_to_hours = {}
-	for user, ticket, est, act, left in todo:
-		v = random.choice(user_to_velocities[user])
-		try:
-			user_to_hours[user] += v * (est - act)
-		except KeyError:
-			user_to_hours[user] = v * (est - act)
+	# How many Markov trials do we run.
+	trials_n = 100
 
-	# How many days of work left does each user have?	
-	user_to_days = {}
-	for user, hours in user_to_hours.items():
-		user_to_days[user] = hours / user_to_dailyworkhours[user]
+	startdt = date.today()
+	shipdates = []
+	dev_shipdates = {}
+	for trial_i in range(trials_n):
 
-	# Days till ship date is worker who finishes last.
-	labordays_till_done = max(user_to_days.values())
+		# How many hours of work does each user have?  Use randomly
+		# selected velocity to estimate this.
+		user_to_hours = {}
+		for user, ticket, est, act, left in todo:
+			v = random.choice(user_to_velocities[user])
+			try:
+				user_to_hours[user] += v * (est - act)
+			except KeyError:
+				user_to_hours[user] = v * (est - act)
 
-	# Convert labor days to calendar days.
-	shipdate = advance_n_workdays(date.today(), labordays_till_done)
+		# How many days of work left does each user have?
+		# Use number of hours per day each dev works on average.
+		user_to_days = {}
+		for user, hours in user_to_hours.items():
+			user_to_days[user] = hours/user_to_dailyworkhours[user]
 
-	return ( (shipdate, 100),), ()
+		for user, days in user_to_days.items():
+			if not dev_shipdates.has_key(user):
+				dev_shipdates[user] = []
+			dev_shipdate = advance_n_workdays(startdt, days)
+			dev_shipdates[user].append(dev_shipdate)
+
+		# Find max # of work days left across all devs.
+		labordays_till_done = max(user_to_days.values())
+
+		# Convert labor days to calendar days.  This is ship date.
+		shipdate = advance_n_workdays(startdt, labordays_till_done)
+		shipdates.append(shipdate)
+
+	#
+	# Compute PDF
+	#
+
+	pdf = pdf_from_shipdatelist(shipdates, trials_n)
+
+	devs = devquartiles_from_devshipdates(dev_shipdates, trials_n)
+
+	return pdf, devs
 
 if __name__ == '__main__':
 	import doctest

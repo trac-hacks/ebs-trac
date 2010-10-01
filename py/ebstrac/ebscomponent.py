@@ -38,7 +38,7 @@ class EBSComponent(Component):
 		    (h.is_status, h.post_status),
 		    (h.is_history, h.get_history),
 		    (h.is_clock, h.post_clock),
-		    (h.is_shipdate, h.post_shipdate),
+#		    (h.is_shipdate, h.post_shipdate),
 		)
 	
 	def match_request(self, req):

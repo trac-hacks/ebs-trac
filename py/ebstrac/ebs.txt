@@ -1,23 +1,34 @@
 Unit tests for the ebs.py module.
 
-The method that computes the graph statistics takes three arguments:
+This module primarily computes two graphs:
 
-	* history, a list of (user, ticket, estimated_hours, actual_hours,
+	1. a probability density function for ship date, and
+
+	2. a box-and-whisker plot for developer ship date.
+
+To compute these graphs, we need three arguments:
+
+	* history 
+
+	  A list of (user, ticket, estimated_hours, actual_hours,
 	  velocity) tuples.  Note that velocity is estimate / actual.
 
 		>>> history = (
 		... ('mark', 1, 1.0, 2.0, 0.5), 
 		... )
 
-	* todo, a list of (user, ticket, estimated_hours, actual_hours)
-	  tuples.
+	* todo
+
+	  A list of (user, ticket, estimated_hours, actual_hours) tuples.
 
 		>>> todo = (
 		... ('mark', 2, 2.0, 1,0),
 		... )
 
-	* timecards, a list of (user, date, total_hours) tuples, with
-	  one entry for each unique user/date combination.
+	* timecards
+
+	  A list of (user, date, total_hours) tuples, with one entry
+	  for each unique user/date combination.
 
 			   September 2010   
 			Su Mo Tu We Th Fr Sa
@@ -33,15 +44,16 @@ The method that computes the graph statistics takes three arguments:
 		... ('mark', dt1, 1.0),
 		... )
 
-This is a very simple example, with 
+The above three arguments define a very simple example, with 
 
 	* one user,
 	* no difference between the historical estimate and the actual,
 	* a task with one hour left on it, and
 	* a user that works one hour per day (based on timecards)
 
-In this case, the probability density function data should have a single
-point---it is 100% likely that this milestone will be done in a day.
+For this example, the probability density function data should have a
+single point---it is 100% likely that this milestone will be done in
+a day.
 
 	>>> from ebs import history_to_plotdata
 	>>> pdf, devs = history_to_plotdata(history, todo, timecards)
@@ -57,10 +69,39 @@ For this toy, example, the one point has a y-value of 100.
 	>>> y
 	100
 
-Checking the x-coordinate is a bit trickier, we'll use one of the workday
-utilities in the ebs module to help us.
+Checking the x-coordinate is a bit trickier, it should be one workday after
+today's date.  We'll use one of the utilities in the ebs module to
+help us.
 	
 	>>> import ebs
-	>>> d = ebs.advance_n_workdays(date.today(), 1)
-	>>> x - d
+	>>> shipdate = ebs.advance_n_workdays(date.today(), 1)
+	>>> x - shipdate
 	datetime.timedelta(0)
+
+The data for the developer box-and-whisker plot should have the following
+fields for each developer: min, 1st quartile, median, 3rd quartile,
+and maximum.
+
+	>>> len(devs)
+	1
+	>>> len(devs[0])
+	6
+	>>> dev, min, q1, q2, q3, max = devs[0]
+	>>> dev
+	'mark'
+
+In this contrived example, since there is no variation all the statistics
+are the same.
+
+	>>> min - shipdate
+	datetime.timedelta(0)
+	>>> q1 - shipdate
+	datetime.timedelta(0)
+	>>> q2 - shipdate
+	datetime.timedelta(0)
+	>>> q3 - shipdate
+	datetime.timedelta(0)
+	>>> max - shipdate
+	datetime.timedelta(0)
+
+
