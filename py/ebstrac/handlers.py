@@ -19,7 +19,7 @@
 # XXX: Audit that malicious input is handled properly.
 
 from time import time, localtime, strftime, mktime, strptime
-from datetime import date, timedelta
+from datetime import date, timedelta, datetime
 import urllib
 
 # Hack so unit tests run if Trac not installed.
@@ -1376,6 +1376,14 @@ def get_shipdate(com, req):
 
 	
 	a = []
+
+	a.append("Schedule for Milestone '%s'" % milestone)
+	a.append("=====================================")
+	a.append("Generated on %s" \
+	    % datetime.now().strftime("%Y-%m-%d at %H:%M")
+	    )
+	a.append("")
+
 	a.append("Probability Density of Ship Date")
 	a.append("-------------------------------------")
 	a.append("")
@@ -1389,12 +1397,12 @@ def get_shipdate(com, req):
 
 	dev_plot = plotter.box_and_whisker(dev_data)
 
-	#a.append("Distribution of Developer Ship Dates")
-	#a.append("-------------------------------------")
-	#a.append("")
-	#a.append(dev_plot)
-	#a.append("")
-	#a.append("")
+	a.append("Developer Ship Dates")
+	a.append("-------------------------------------")
+	a.append("")
+	a.append(dev_plot)
+	a.append("")
+	a.append("")
 
 	data = "\n".join(a)
 	req.send_response(200)

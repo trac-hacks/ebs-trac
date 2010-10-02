@@ -107,14 +107,12 @@ def box_and_whisker(dev_data):
 	for row in dev_data:
 		dev_to_x[row[0]] = i
 		i += 1
-	
-	# for xrange
 	xmax = i 
 
 	# set xtics ('mark' 1, 'paul' 2)
 	a = []
 	for dev, idx in dev_to_x.items():
-		a.append("%s %d" % (dev, idx))
+		a.append("\"%s\" %d" % (dev, idx))
 	xticlabels = ",".join(a)
 		
 	cmds = 'set terminal dumb\n' \
@@ -135,7 +133,7 @@ def box_and_whisker(dev_data):
 	    'set bars 4.0\n' \
 	    'set style fill empty\n' \
 	    'set xrange [%d:%d]\n' \
-	    'plot '-' using 1:3:2:6:5 with candlesticks\n' \
+	    'plot "-" using 1:3:2:6:5 with candlesticks\n' \
 	    % (xticlabels, xmin, xmax)
 
 	#
