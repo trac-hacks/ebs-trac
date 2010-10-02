@@ -1384,7 +1384,7 @@ def get_shipdate(com, req):
 	a.append("")
 	a.append("")
 
-	#dev_plot = plotter.box_and_whisker(dev_data)
+	dev_plot = plotter.box_and_whisker(dev_data)
 
 	#a.append("Distribution of Developer Ship Dates")
 	#a.append("-------------------------------------")

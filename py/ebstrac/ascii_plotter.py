@@ -24,7 +24,7 @@ def gnuplot_wrapper(plotcommands):
 		# lots of stderr output.
 		#
 
-#		s = '''set terminal dumb 70 20
+#		s = '''set terminal dumb
 #plot sin(x)
 #'''
 		(l1, l2) = p.communicate(plotcommands)
@@ -52,7 +52,7 @@ def pdf(pdf_data):
 	'''
 
 	if not pdf_data:
-		return "No data to plot"
+		return "No probability density data to plot"
 
 	mindt = pdf_data[0][0]
 	maxdt = pdf_data[-1][0]
@@ -87,7 +87,25 @@ def box_and_whisker(dev_data):
 	tuples.
 	'''
 
-	raise "plotter.box_and_whisker() is not implemented"
+	if not dev_data:
+		return "No developer data to plot"
+
+#set ydata time
+#set timefmt "%Y-%m-%d"
+#set format y "%m-%d"
+#set ytics out nomirror
+##unset ytics
+#unset xtics
+#unset key
+#unset border
+##set yrange [0:100]
+##set xrange ["%s":"%s"]
+#
+#set terminal dumb
+#set bars 4.0
+#set style fill empty
+#set xrange [1:10]
+#plot 't.in' using 1:3:2:6:5 with candlesticks title 'Test'
 
 	return ''
 
