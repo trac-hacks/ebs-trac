@@ -22,7 +22,7 @@ To compute these graphs, we need three arguments:
 		... ('mark', 2, 2.0, 1.0, 1.0),
 		... )
 
-	* timecards: (user, date, total_hours)
+	* dev_to_dailyworkhours: {'dev1': <hrs/day>, 'dev2': ...}
 
 	  One entry for each unique user/date combination.
 
@@ -34,25 +34,21 @@ To compute these graphs, we need three arguments:
 			19 20 21 22 23 24 25
 			26 27 28 29 30      
 
-		>>> from datetime import date, timedelta
-		>>> dt1 = date(2010, 9, 1)
-		>>> timecards = (
-		... ('mark', dt1, 1.0),
-		... )
+		>>> dev_to_hrs = {'mark': 1.0}
 
 The above three arguments define a very simple example, with 
 
 	* one user,
 	* no difference between the historical estimate and the actual,
 	* a task with one hour left on it, and
-	* a user that works one hour per day (based on timecards)
+	* a user that works one hour per day
 
 For this example, the probability density function data should have a
 single point---it is 100% likely that this milestone will be done in
 a day.
 
 	>>> from ebs import history_to_plotdata
-	>>> pdf, devs = history_to_plotdata(history, todo, timecards)
+	>>> pdf, devs = history_to_plotdata(history, todo, dev_to_hrs)
 	>>> len(pdf)
 	1
 
@@ -69,6 +65,7 @@ Checking the x-coordinate is a bit trickier, it should be one workday after
 today's date.  We'll use one of the utilities in the ebs module to
 help us.
 	
+	>>> from datetime import date, timedelta
 	>>> import ebs
 	>>> shipdate = ebs.advance_n_workdays(date.today(), 1)
 	>>> x - shipdate == timedelta(0) or "%s, %s" % (x, shipdate)
@@ -140,21 +137,13 @@ A slightly more complicated example: two devs.
 		19 20 21 22 23 24 25
 		26 27 28 29 30      
 
-	>>> from datetime import date
-	>>> dt1 = date(2010, 9, 1)
-	>>> dt2 = date(2010, 9, 2)
-	>>> timecards = (
-	... ('mark', dt1, 4.0),
-	... ('mark', dt2, 6.0),
-	... ('paul', dt1, 0.5),
-	... ('paul', dt2, 1.5),
-	... )
+	>>> dev_to_hrs = {'mark': 5.0, 'paul': 1.0}
 
 
 There is still no variation in velocity, so the PDF should have one entry,
 with 100% probability.
 
-	>>> pdf, devs = history_to_plotdata(history, todo, timecards)
+	>>> pdf, devs = history_to_plotdata(history, todo, dev_to_hrs)
 	>>> len(pdf)
 	1
 	>>> dt, density = pdf[0]
@@ -229,15 +218,12 @@ Dev #2 ship date:
 	>>> from datetime import date
 	>>> dt1 = date(2010, 9, 1)
 	>>> dt2 = date(2010, 9, 2)
-	>>> timecards = (
-	... ('mark', dt1, 5.0),
-	... ('paul', dt2, 1.0),
-	... )
+	>>> dev_to_hrs = {'mark': 5.0, 'paul': 1.0}
 
 No variation in velocity, so the PDF should have one entry, with 100%
 probability.
 
-	>>> pdf, devs = history_to_plotdata(history, todo, timecards)
+	>>> pdf, devs = history_to_plotdata(history, todo, dev_to_hrs)
 	>>> len(pdf)
 	1
 	>>> dt, density = pdf[0]
@@ -261,7 +247,6 @@ in velocity.
 	>>> mark_dt = ebs.advance_n_workdays(today, 2)
 	>>> dev = min = q1 = q2 = q3 = max = None
 	>>> a = [x for x in devs if x[0] == 'mark']
-	>>> a[0]
 	>>> dev, min, q1, q2, q3, max = a[0]
 	>>> min - mark_dt == timedelta(0) or "%s, %s" % (min, mark_dt)
 	True
@@ -294,10 +279,10 @@ in velocity.
 Some variability in velocity!
 
 	* devloper #1:
-		- works 1 hours a day
+		- works 1 hour a day
 		- two equally-likely velocities
 			- 0.5 (takes twice as long)
-			- 1.0 (does it exactly on estimate)
+			- 1.0 (finishes exactly on time)
 		- one task with 2 hours left
 	(velocity = est/act)
 
@@ -307,6 +292,9 @@ Ship date:
 	- each with 50% likelihood
 
 ----------------------------------------------------------------------
+
+	>>> import ebs
+	>>> from datetime import timedelta, date
 
 (dev, ticket, estimated, actual, velocity)
 
@@ -323,40 +311,29 @@ Ship date:
 
 (user, date, total_hours) 
 
-		   September 2010   
-		Su Mo Tu We Th Fr Sa
-			  1  2  3  4
-		 5  6  7  8  9 10 11
-		12 13 14 15 16 17 18
-		19 20 21 22 23 24 25
-		26 27 28 29 30      
+	>>> dev_to_hrs = {'mark': 1.0}
 
-	>>> from datetime import date
-	>>> dt1 = date(2010, 9, 1)
-	>>> timecards = (
-	... ('mark', dt1, 1.0),
-	... )
-
-
-	>>> dt0 = ebs.advance_n_workdays(date.today(), 2)
-	>>> dt1 = ebs.advance_n_workdays(date.today(), 4)
-
-	>>> pdf, devs = history_to_plotdata(history, todo, timecards)
+	>>> pdf, devs = ebs.history_to_plotdata(history, todo, dev_to_hrs)
 	>>> len(pdf)
 	2
 
-First ship date (50% likely) is two days from today.
+First ship date (around 50% likely, but may vary depending on specific
+random sample we get in this test run) is two days from today.
 
-	>>> dt, density = pdf[0]
-	>>> density
-	50
+	>>> from datetime import date
+	>>> dt0 = ebs.advance_n_workdays(date.today(), 2)
+	>>> dt1 = ebs.advance_n_workdays(date.today(), 4)
+
+	>>> shipdate, density = pdf[0]
+	>>> abs(density - 50) < 5 or "%d 50" % density
+	True
 	>>> dt0 - shipdate  == timedelta(0) or "%s, %s" % (dt, shipdate)
 	True
 
 Other ship date (also 50% likely) is four days from today.
 
-	>>> dt, density = pdf[1]
+	>>> shipdate, density = pdf[1]
 	>>> density
-	50
+	100
 	>>> dt1 - shipdate  == timedelta(0) or "%s, %s" % (dt, shipdate)
 	True

@@ -349,7 +349,7 @@ def devquartiles_from_labordays(dev_labordays, trials_n):
 	return tuple(rval)
 	
 
-def history_to_plotdata(history, todo, timecards):
+def history_to_plotdata(history, todo, dev_to_dailyworkhours):
 	'''
 	History is a list of 
 
@@ -379,12 +379,11 @@ def history_to_plotdata(history, todo, timecards):
 	See ebs.txt for the unit tests.
 	'''
 
-	dev_to_dailyworkhours = availability_from_timecards(timecards)
 
 	dev_to_velocities = history_to_dict(history)
 
 	# How many Markov trials do we run.
-	trials_n = 100
+	trials_n = 1000
 
 	startdt = date.today()
 	shipdates = []
@@ -444,4 +443,4 @@ def history_to_plotdata(history, todo, timecards):
 if __name__ == '__main__':
 	import doctest
 	doctest.testmod()
-	doctest.testfile('t.txt')
+	doctest.testfile('ebs.txt')
