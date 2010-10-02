@@ -90,23 +90,62 @@ def box_and_whisker(dev_data):
 	if not dev_data:
 		return "No developer data to plot"
 
-#set ydata time
-#set timefmt "%Y-%m-%d"
-#set format y "%m-%d"
-#set ytics out nomirror
-##unset ytics
-#unset xtics
-#unset key
-#unset border
-##set yrange [0:100]
-##set xrange ["%s":"%s"]
-#
-#set terminal dumb
-#set bars 4.0
-#set style fill empty
-#set xrange [1:10]
-#plot 't.in' using 1:3:2:6:5 with candlesticks title 'Test'
+	#
+	# By default, gnuplot only plots box-and-whisker plots vertically.
+	# There is a work around, but I didn't bother looking it up as I'm
+	# already at velocity 2.0 for this ticket.  :)
+	#
+	# So, we need an integer for the x-value of each box, so map dev
+	# names to integers here.  We'll use the names as the tic labels.
+	#
 
-	return ''
+	# for xrange
+	xmin = 0
 
+	i = xmin + 1
+	dev_to_x = {}
+	for row in dev_data:
+		dev_to_x[row[0]] = i
+		i += 1
+	
+	# for xrange
+	xmax = i 
 
+	# set xtics ('mark' 1, 'paul' 2)
+	a = []
+	for dev, idx in dev_to_x.items():
+		a.append("%s %d" % (dev, idx))
+	xticlabels = ",".join(a)
+		
+	cmds = 'set terminal dumb\n' \
+	    '\n' \
+	    'set ydata time\n' \
+	    'set timefmt "%%Y-%%m-%%d"\n' \
+	    'set format y "%%m-%%d"\n' \
+	    '\n' \
+	    'set ytics out nomirror\n' \
+	    'unset mytics\n' \
+	    '\n' \
+	    'set xtics (%s)\n' \
+	    'unset mxtics\n' \
+	    '\n' \
+	    'unset key\n' \
+	    'unset border\n' \
+	    '\n' \
+	    'set bars 4.0\n' \
+	    'set style fill empty\n' \
+	    'set xrange [%d:%d]\n' \
+	    'plot '-' using 1:3:2:6:5 with candlesticks\n' \
+	    % (xticlabels, xmin, xmax)
+
+	#
+	# Example of what input data should look like:
+	#
+	#	3 2010-10-04 2010-10-19 2010-11-01 2010-11-19 2011-03-15
+	#
+
+	for dev, min, q1, q2, q3, max in dev_data:
+		cmds += "%d %s %s %s %s %s\n" % \
+		    (dev_to_x[dev], min, q1, q2, q3, max)
+
+	return gnuplot_wrapper(cmds)
