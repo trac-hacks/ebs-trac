@@ -560,6 +560,14 @@ def lookup_history(db):
 		if not act > 0.0:
 			continue
 
+		#
+		# Skip tickets with zero estimate as well, that gives
+		# a velocity of zero which causes divide-by-zero errors.
+		#
+
+		if not est > 0.0:
+			continue
+
 		# Per Joel on Softare,
 		#
 		# 	velocity = estimate / actual
