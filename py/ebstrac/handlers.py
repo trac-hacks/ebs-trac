@@ -1404,6 +1404,25 @@ def get_shipdate(com, req):
 	a.append("")
 	a.append("")
 
+	a.append("Developer Summary")
+	a.append("-------------------------------------")
+	a.append("")
+	a.append("                        |  total   | hrs per")
+	a.append("              | tickets | est. hrs | work day")
+	a.append("    ----------+---------+----------+----------")
+	for dev, hrs in dev_to_dailyworkhours.items():
+		tickets = 0
+		tot_est = 0
+		for dev1, ticket, est, act, diff in todo:
+			if dev == dev1:
+				tickets += 1
+				tot_est += est - act
+		a.append("     %-8s | %7d | %7.1f | %7.1f " \
+		    % (dev[:8], tickets, tot_est, hrs))
+		a.append("    ----------+---------+----------+----------")
+	a.append("")
+
+
 	data = "\n".join(a)
 	req.send_response(200)
 	req.send_header('Content-Type', 'plain/text')
