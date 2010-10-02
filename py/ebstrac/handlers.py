@@ -1362,7 +1362,10 @@ def get_shipdate(com, req):
 	timecards = lookup_timecards(db)
 
 
-	pdf_data, dev_data = ebs.history_to_plotdata(history, todo, timecards)
+	dev_to_dailyworkhours = ebs.availability_from_timecards(timecards)
+
+	pdf_data, dev_data = \
+	    ebs.history_to_plotdata(history, todo, dev_to_dailyworkhours)
 	pdf_plot = plotter.pdf(pdf_data)
 
 	mindt = pdf_data[0][0]
