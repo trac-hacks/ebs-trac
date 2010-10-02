@@ -25,4 +25,6 @@ u=$protocol://$host/$urlprefix/$quotedurl
 echo "$u:" 
 
 # -k option because my SSL cert is self-signed, old, for wrong domain.
-curl -s -k --user $user:$pass $u
+# -H option so Trac will read query string arguments.
+curl -s -k -H "Content-Type:application/x-www-form-urlencoded" \
+  --user $user:$pass $u

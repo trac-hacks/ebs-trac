@@ -1329,6 +1329,34 @@ def is_shipdate(req):
 	a = req.path_info.strip('/').split('/')
 	return len(a) == 4 and a[2] == 'shipdate'
 
+def extract_dev_hrs(req):
+	'''
+		>>> class T: pass
+		>>> t = T()
+		>>> t.path_info = '/test/Event%20Demo/%3fmark=8'
+		>>> extract_dev_hrs(t)
+		{'mark': 8.0}
+
+	If invalid query argument, return an error.
+	'''
+
+	s = urllib.unquote(req.path_info)
+	
+	if '?' not in s:
+		return {}
+	
+	try:
+		rval = {}
+		path, arglist = s.split('?')
+		args = arglist.split('&')
+		for arg in args:
+			dev, hrs = arg.split('=')
+			rval[dev] = float(hrs)
+	except Exception, e:
+		error(req, "Unexpected query string format: %s" % e)
+
+	return rval
+
 def get_shipdate(com, req):
 	'''Report shipdate of hours and tickets across all users.'''
 	f = "get_shipdate"
@@ -1347,6 +1375,8 @@ def get_shipdate(com, req):
 
 	# Use unquote_plus() so we can use the plus sign for spaces.
 	milestone = urllib.unquote(milestone)
+	if '?' in milestone:
+		milestone = milestone.split('?')[0]
 
 	todo = lookup_todo(db, milestone)
 
@@ -1361,8 +1391,11 @@ def get_shipdate(com, req):
 	history = lookup_history(db)
 	timecards = lookup_timecards(db)
 
-
 	dev_to_dailyworkhours = ebs.availability_from_timecards(timecards)
+	dev_hrs = extract_dev_hrs(req)
+	for dev in dev_to_dailyworkhours.keys():
+		if dev_hrs.has_key(dev):
+			dev_to_dailyworkhours[dev] = dev_hrs[dev]
 
 	pdf_data, dev_data = \
 	    ebs.history_to_plotdata(history, todo, dev_to_dailyworkhours)
