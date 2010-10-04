@@ -20,6 +20,7 @@
 
 from time import time, localtime, strftime, mktime, strptime
 from datetime import date, timedelta, datetime
+import re
 import urllib
 
 # Hack so unit tests run if Trac not installed.
@@ -229,6 +230,20 @@ def lookup_timecards(db):
 		if not oldvalue and not newvalue:
 			continue
 
+		#
+		# It's possible the user typed in a single empty space
+		# for actual hours and then saved the record.  In this 
+		# case, the newvalue = ' ', and it passes the above test.
+		# We assume that if the value is all whitespace, it means
+		# a zero.
+		#
+
+		pwhitespace = re.compile(r'^\s+$')
+		if pwhitespace.match(oldvalue):
+			oldvalue = 0
+		if pwhitespace.match(newvalue):
+			newvalue = 0
+		
 		v0 = float(oldvalue)
 		v1 = float(newvalue)
 		hours = v1 - v0
