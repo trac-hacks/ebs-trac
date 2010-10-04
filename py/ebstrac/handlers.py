@@ -187,7 +187,7 @@ def is_log(req):
 	a = req.path_info.strip('/').split('/')
 	return len(a) == 3 and a[2] == 'log'
 
-def lookup_timecards(db):
+def lookup_timecards(req, db):
 	'''
 	Look through ticket_change table and pull hours worked
 	by day by user.
@@ -220,15 +220,14 @@ def lookup_timecards(db):
 		user, tid, epoch_seconds, oldvalue, newvalue = row
 
 		#
-		# After installing ebstrac plugin, when I closed old
-		# tickets they got 'actualhours' ticket_change records
-		# where both the old and the new value were empty.
-		# These records raised a TypeError when trying to convert
-		# to a float.
+		# The values can be None,  Map to zero, otherwise regex
+		# check below will fail with a TypeError.
 		#
 
-		if not oldvalue and not newvalue:
-			continue
+		if oldvalue is None:
+			oldvalue = '0.0'
+		if newvalue is None:
+			newvalue = '0.0'
 
 		#
 		# It's possible the user typed in a single empty space
@@ -238,15 +237,26 @@ def lookup_timecards(db):
 		# a zero.
 		#
 
-		pwhitespace = re.compile(r'^\s+$')
+		pwhitespace = re.compile(r'^\s*$')
 		if pwhitespace.match(oldvalue):
 			oldvalue = 0
 		if pwhitespace.match(newvalue):
 			newvalue = 0
 		
-		v0 = float(oldvalue)
-		v1 = float(newvalue)
+		try:
+			v0 = float(oldvalue)
+		except ValueError, ve:
+			error(req, 
+			    "can't cast '%s' to float: %s" % (oldvalue, ve))
+		try:
+			v1 = float(newvalue)
+		except ValueError, ve:
+			error(req,
+			    "can't cast '%s' to float: %s" % (newvalue, ve))
 		hours = v1 - v0
+
+		if hours < 0.000001:
+			continue
 
 		# Hours that are booked to a different date have the
 		# actual date stored in the related comment field.
@@ -1412,7 +1422,7 @@ def get_shipdate(com, req):
 		raise RequestDone
 
 	history = lookup_history(db)
-	timecards = lookup_timecards(db)
+	timecards = lookup_timecards(req, db)
 
 	dev_to_dailyworkhours = ebs.availability_from_timecards(timecards)
 	dev_hrs = extract_dev_hrs(req)
