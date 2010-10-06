@@ -1390,6 +1390,35 @@ def extract_dev_hrs(req):
 
 	return rval
 
+def history_to_avgvelocity(history):
+	'''
+		>>> h = [
+		... ('dev1', 100, 1.0, 2.0, 0.5),
+		... ('dev1', 101, 2.0, 2.5, 0.8),
+		... ]
+		>>> d = history_to_avgvelocity(h)
+		>>> "%.6f" % d['dev1']
+		'0.666667'
+		
+	'''
+
+	te = {}
+	ta = {}
+	for dev, ticket, est, act, velocity in history:
+		try:
+			te[dev] += est
+		except KeyError:
+			te[dev] = est
+		try:
+			ta[dev] += act
+		except KeyError:
+			ta[dev] = act
+	d = {}
+	for dev, est in te.items():
+		d[dev] = te[dev]/float(ta[dev])
+
+	return d
+
 def get_shipdate(com, req):
 	'''Report shipdate of hours and tickets across all users.'''
 	f = "get_shipdate"
@@ -1473,9 +1502,15 @@ def get_shipdate(com, req):
 	a.append("Developer Summary")
 	a.append("-------------------------------------")
 	a.append("")
-	a.append("                        |  total   | hrs per")
-	a.append("              | tickets | est. hrs | work day")
-	a.append("    ----------+---------+----------+----------")
+	a.append("              | tickets |  total   | hrs per  |")
+	a.append("              |   **    | est. hrs | work day | avg vel")
+	a.append("    ----------+---------+----------+----------+----------")
+
+	#
+	# Compute avg. velocity for each developer.
+	#
+
+	dev_to_avgvelocity = history_to_avgvelocity(history)
 	for dev, hrs in dev_to_dailyworkhours.items():
 		tickets = 0
 		tot_est = 0
@@ -1483,10 +1518,11 @@ def get_shipdate(com, req):
 			if dev == dev1:
 				tickets += 1
 				tot_est += est - act
-		a.append("     %-8s | %7d | %7.1f | %7.1f " \
-		    % (dev[:8], tickets, tot_est, hrs))
-		a.append("    ----------+---------+----------+----------")
+		a.append("     %-8s | %7d | %7.1f  | %7.1f  |%8.2f" \
+		    % (dev[:8], tickets, tot_est, hrs, dev_to_avgvelocity[dev]))
+		a.append("    ----------+---------+----------+----------+----------")
 	a.append("")
+	a.append("            ** only tickets with estimates are counted")
 
 
 	data = "\n".join(a)
