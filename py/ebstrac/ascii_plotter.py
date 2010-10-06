@@ -124,7 +124,7 @@ def box_and_whisker(dev_data):
 	    'set ytics out nomirror\n' \
 	    'unset mytics\n' \
 	    '\n' \
-	    'set xtics (%s)\n' \
+	    'set xtics (%s) out nomirror\n' \
 	    'unset mxtics\n' \
 	    '\n' \
 	    'unset key\n' \
