@@ -40,6 +40,38 @@ import ascii_plotter as plotter
 
 magicname='EvidenceBasedSchedulingTimeClockPage'
 
+def string_to_float(s):
+	'''
+	In ticket_change, the value can be None, empty string, multiple
+	spaces, or a number.
+
+	Handle all these, and return a float.  None, empty and whitespace
+	count as 0.0.
+
+		>>> string_to_float(None)
+		0.0
+		>>> string_to_float('')
+		0.0
+		>>> string_to_float('    ')
+		0.0
+
+	Returns an error page if, after our best efforts, we get a 
+	ValueError converting the string to a float.
+	'''
+
+	if not s:
+		return 0.0
+
+	p = re.compile(r'^\s*$')
+	if p.match(s):
+		return 0.0
+
+	try:
+		return float(s)
+	except ValueError, ve:
+		error(req, 
+		    "can't cast '%s' to float: %s" % (s, ve))
+
 def error(req, data):
 	if data[-1] != '\n':
 		data += '\n'
@@ -219,40 +251,9 @@ def lookup_timecards(req, db):
 		# Split here, not in for in case fetchall() returns nothing.
 		user, tid, epoch_seconds, oldvalue, newvalue = row
 
-		#
-		# The values can be None,  Map to zero, otherwise regex
-		# check below will fail with a TypeError.
-		#
+		oldvalue = string_to_float(oldvalue)
+		newvalue = string_to_float(newvalue)
 
-		if oldvalue is None:
-			oldvalue = '0.0'
-		if newvalue is None:
-			newvalue = '0.0'
-
-		#
-		# It's possible the user typed in a single empty space
-		# for actual hours and then saved the record.  In this 
-		# case, the newvalue = ' ', and it passes the above test.
-		# We assume that if the value is all whitespace, it means
-		# a zero.
-		#
-
-		pwhitespace = re.compile(r'^\s*$')
-		if pwhitespace.match(oldvalue):
-			oldvalue = 0
-		if pwhitespace.match(newvalue):
-			newvalue = 0
-		
-		try:
-			v0 = float(oldvalue)
-		except ValueError, ve:
-			error(req, 
-			    "can't cast '%s' to float: %s" % (oldvalue, ve))
-		try:
-			v1 = float(newvalue)
-		except ValueError, ve:
-			error(req,
-			    "can't cast '%s' to float: %s" % (newvalue, ve))
 		hours = v1 - v0
 
 		if hours < 0.000001:
@@ -324,18 +325,8 @@ def get_log(com, req):
 	for row in cursor.fetchall():
 		(tid, epoch_seconds, oldvalue, newvalue) = row
 
-		#
-		# After installing ebstrac plugin, when I closed old tickets
-		# they got 'actualhours' ticket_change records where both the
-		# old and the new value were empty.  These records raised
-		# a TypeError when trying to convert to a float.
-		#
-
-		if not oldvalue and not newvalue:
-			continue
-
-		v0 = float(oldvalue)
-		v1 = float(newvalue)
+		v0 = string_to_float(oldvalue)
+		v1 = string_to_float(newvalue)
 		hours = v1 - v0
 
 		# Hours that are booked to a different date have the actual
@@ -663,7 +654,7 @@ def add_hours_to_ticket(com, req, user, tid, delta, dt=None):
 		efmt = "%s: ticket %s doesn't have actualhours custom field"
 		error(req, efmt % (f, tid))
 
-	oldval = float(row[0])
+	oldval = string_to_float(row[0])
 	newval = oldval + delta
 	if newval < 0:
 		efmt = "%s: can't end up with negative hours, " \
@@ -681,7 +672,7 @@ def add_hours_to_ticket(com, req, user, tid, delta, dt=None):
 	params = (tid,)
 	cursor.execute(sql, params)
 	row = cursor.fetchone()
-	if not row or not row[0] or float(row[0]) < 0.01:
+	if not row or not row[0] or string_to_float(row[0]) < 0.01:
 		error(req, "You can't charge time until you " \
 		    + "have made an estimate.")
 
@@ -765,7 +756,7 @@ def add_hours_and_return(com, req, hours):
 		error(req, "Internal error.")
 
 def post_hours(com, req):
-	hours = float(req.args['data'])
+	hours = string_to_float(req.args['data'])
 	add_hours_and_return(com, req, hours)
 
 def is_minutes(req):
@@ -779,7 +770,7 @@ def is_minutes(req):
 	return len(a) in (5, 6) and a[2] == 'ticket' and a[4] == 'minutes'
 
 def post_minutes(com, req):
-	hours = float(req.args['data'])
+	hours = string_to_float(req.args['data'])
 	hours = hours / 60.
 	add_hours_and_return(com, req, hours)
 
@@ -818,8 +809,8 @@ def post_estimate(com, req):
 
 	oldval = 0.0
 	if row[0]:
-		oldval = float(row[0])
-	newval = float(req.args['data'])
+		oldval = string_to_float(row[0])
+	newval = string_to_float(req.args['data'])
 	if newval < 0:
 		efmt = "%s: can't have a negative estimate"
 		error(req, efmt % (f, ))
@@ -1384,7 +1375,7 @@ def extract_dev_hrs(req):
 		args = arglist.split('&')
 		for arg in args:
 			dev, hrs = arg.split('=')
-			rval[dev] = float(hrs)
+			rval[dev] = string_to_float(hrs)
 	except Exception, e:
 		error(req, "Unexpected query string format: %s" % e)
 
