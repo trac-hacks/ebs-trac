@@ -417,7 +417,7 @@ def lookup_todo(db, milestone):
 	WHERE
 		t.id = e.ticket AND
 		e.ticket = a.ticket AND
-		t.status in ('open', 'new', 'reopened') AND
+		t.status <> 'closed' AND
 		t.milestone = %s
 	ORDER BY
 		t.owner,
@@ -1268,14 +1268,14 @@ def post_status(com, req):
 	if oldval == 'closed' and newval == 'closed':
 		error(req, 'ticket already closed')
 
-	if oldval in ('new', 'reopened') and newval == 'reopened':
+	if oldval in ('new', 'reopened', 'assigned') and newval == 'reopened':
 		error(req, 'ticket already open')
 
 	if oldval == 'closed' and newval != 'reopened':
 		error(req, "ticket is closed, so the only valid new status " \
 		    + "is 'reopened'")
 
-	if oldval in ('new', 'reopened') and newval != 'closed':
+	if oldval in ('new', 'reopened', 'assigned') and newval != 'closed':
 		error(req, "ticket is open, only valid new status is " \
 		    + "'closed'")
 
