@@ -362,7 +362,7 @@ def get_log(com, req):
 	req.write('\n')
 	raise RequestDone
 
-def lookup_todo(db, milestone):
+def lookup_todo(req, db, milestone):
 	'''
 	Return a list of 
 
@@ -1430,7 +1430,7 @@ def get_shipdate(com, req):
 	if '?' in milestone:
 		milestone = milestone.split('?')[0]
 
-	todo = lookup_todo(db, milestone)
+	todo = lookup_todo(req, db, milestone)
 
 	if not todo:
 		data = "No tasks assigned to Milestone '%s'\n" % milestone
