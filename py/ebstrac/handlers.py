@@ -457,7 +457,7 @@ def lookup_todo(db, milestone):
 			else:
 				efmt = "Ticket %d has actual hours but a "  \
 				    "zero estimate---fix data and re-run."
-				error(efmt % tid)
+				error(req, efmt % tid)
 
 		todo = est - act
 
