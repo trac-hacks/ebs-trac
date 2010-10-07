@@ -399,11 +399,19 @@ def history_to_plotdata(history, todo, dev_to_dailyworkhours):
 			v = random.choice(dev_to_velocities[dev])
 			hrsleft = (est - act)/v
 
+			#
+			# If someone has booked more time than estimated
+			# to an open ticket, we skip it.  This was a tough
+			# call, and I considered getting things like trying
+			# to estimate how many hours are left based on this
+			# developer's history.  But there really is no way
+			# to know for sure how many hours are left; they
+			# may be very close to done, or they may not.  It's
+			# much simpler (and easier to explain) that we just
+			# skip these.
+			# 
 			if hrsleft < 0.0:
-				efmt = "don't support tickets with "\
-				    "actual > estimate.  ticket #%s, "\
-				    "act=%.2f, est=%.2f, velocity=%.2f"
-				raise ValueError(efmt % (ticket, act, est, v))
+				continue
 			try:
 				dev_to_hrsleft[dev] += hrsleft
 			except KeyError:
