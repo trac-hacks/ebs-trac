@@ -251,9 +251,8 @@ def lookup_timecards(req, db):
 		# Split here, not in for in case fetchall() returns nothing.
 		user, tid, epoch_seconds, oldvalue, newvalue = row
 
-		oldvalue = string_to_float(oldvalue)
-		newvalue = string_to_float(newvalue)
-
+		v0 = string_to_float(oldvalue)
+		v1 = string_to_float(newvalue)
 		hours = v1 - v0
 
 		if hours < 0.000001:
