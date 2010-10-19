@@ -698,7 +698,19 @@ def add_hours_to_ticket(com, req, user, tid, delta, dt=None):
 		row = cursor.fetchone()
 		col_n = 0
 		if row and row[0]:
-			col_n = int(row[0])
+			
+			# If you have added a new ticket comment that is a reply
+			# to an existing comment, then Trac stores the oldvalue
+			# as:
+			#
+			#	<replied_to_comment#>.<new_comment_#>
+			#
+			# and casting to an int fails.
+			#
+
+			s = row[0]
+			i = s.split('.')[-1]
+			col_n = int(s)
 		col_n += 1
 
 		tm = int(time())
@@ -783,7 +795,7 @@ def is_estimate(req):
 
 def post_estimate(com, req):
 	'''Associate an estimate with a ticket.'''
-	f = "postestimate"
+	f = "post_estimate"
 	if req.method != 'GET':
 		error(req, "%s: expected a GET" % f)
 
@@ -1230,7 +1242,7 @@ def is_status(req):
 
 def post_status(com, req):
 	'''Change a ticket's status.'''
-	f = "poststatus"
+	f = "post_status"
 	if req.method != 'GET':
 		error(req, "%s: expected a GET" % f)
 
