@@ -699,6 +699,7 @@ def add_hours_to_ticket(com, req, user, tid, delta, dt=None):
 		col_n = 0
 		if row and row[0]:
 			
+			#
 			# If you have added a new ticket comment that is a reply
 			# to an existing comment, then Trac stores the oldvalue
 			# as:
@@ -708,9 +709,8 @@ def add_hours_to_ticket(com, req, user, tid, delta, dt=None):
 			# and casting to an int fails.
 			#
 
-			s = row[0]
-			i = s.split('.')[-1]
-			col_n = int(s)
+			last_comment_number = row[0].split('.')[-1]
+			col_n = int(last_comment_number)
 		col_n += 1
 
 		tm = int(time())
