@@ -394,6 +394,12 @@ def history_to_plotdata(history, todo, dev_to_dailyworkhours):
 		# selected velocity to estimate this.
 		dev_to_hrsleft = {}
 		for dev, ticket, est, act, left in todo:
+
+			# Skip tickets with no estimate.  We have no
+			# way to handle them.
+			if est < 0.00001:
+				continue
+
 			# velocity = est/actual.
 			# new est. = est / v
 			v = random.choice(dev_to_velocities[dev])

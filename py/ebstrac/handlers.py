@@ -369,6 +369,8 @@ def lookup_todo(req, db, milestone):
 		(user, ticket, estimated_hours, actual_hours, left)
 
 	tuples for all tickets that are open for the given milestone.
+
+	We include tickets with a zero estimate.
 	'''
 
 	cursor = db.cursor()
@@ -438,12 +440,6 @@ def lookup_todo(req, db, milestone):
 	for (tid, owner, est, act) in rows:
 		
 		#
-		# Tickets with a blank estimate are problematic.
-		#
-		# It's possible they are assigned to a milestone but don't
-		# have an estimate yet and don't have any hours booked 
-		# to them yet.  We can safely skip those.
-		#
 		# If a ticket has actual hours, it is supposed to have an
 		# estimate.  Enforce this strictly---make the user fix 
 		# the data.  With this data situaion, it is not possible
@@ -451,39 +447,13 @@ def lookup_todo(req, db, milestone):
 		#
 
 		thresh = 0.000001
-		if est < thresh:
-			if act < thresh:
-				continue
-			else:
-				efmt = "Ticket %d has actual hours but a "  \
-				    "zero estimate---fix data and re-run."
-				error(req, efmt % tid)
+		if est < thresh and act > thresh:
+			efmt = "Ticket %d has actual hours but a "  \
+			    "zero estimate---fix data and re-run."
+			error(req, efmt % tid)
 
+		# XXX: remove calculated value (est - act) from tuple.
 		todo = est - act
-
-		#
-		# What if the developer has already booked more time
-		# than they estimated?
-		#
-		# The Joel on Software blog post doesn't mention this
-		# situation.  In fact, he doesn't mention subtracting
-		# actual hours already booked to open tickets at all.
-		#
-		# One way to handle this is to subtract the actual
-		# hours after applying the randomly selected velocity to
-		# the estimate.  If the developer typically goes over,
-		# then the hours left using this method may still be
-		# positive.
-		#
-		# Another way is to ignore actual hours posted.
-		#
-		# A third way is to somehow estimate the time left, 
-		# perhaps based on how much over they are already
-		# and the randomly selected velocity.
-		#
-		# Punt for now, we'll deal with this later in the flow.
-		#
-
 		a.append((owner, tid, est, act, todo))
 
 	return tuple(a)
@@ -1504,9 +1474,9 @@ def get_shipdate(com, req):
 	a.append("Developer Summary")
 	a.append("-------------------------------------")
 	a.append("")
-	a.append("              | tickets |  total   | hrs per  |")
-	a.append("              |   **    | est. hrs | work day | avg vel")
-	a.append("    ----------+---------+----------+----------+----------")
+	a.append("              |  tickets  |  total   | hrs per  |")
+	a.append("              |     **    | est. hrs | work day | avg vel")
+	a.append("    ----------+-----------+----------+----------+----------")
 
 	#
 	# Compute avg. velocity for each developer.
@@ -1516,21 +1486,31 @@ def get_shipdate(com, req):
 	for dev, hrs in dev_to_dailyworkhours.items():
 		tickets = 0
 		tot_est = 0
+		no_estimate_n = 0
+		overbudget_n = 0
 		for dev1, ticket, est, act, diff in todo:
 			if dev == dev1:
-				tickets += 1
-				
+				if est < 0.0001:
+					no_estimate_n += 1
                                 # If they have an open ticket where
                                 # they have charged more time than
                                 # estimated, then don't _reduce_ the
                                 # hours left of work!  Just skip it.
-				if est - act > 0:
+				elif est >= act:
 					tot_est += est - act
-		a.append("     %-8s | %7d | %7.1f  | %7.1f  |%8.2f" \
-		    % (dev[:8], tickets, tot_est, hrs, dev_to_avgvelocity[dev]))
-		a.append("    ----------+---------+----------+----------+----------")
+					tickets += 1
+				else:
+					overbudget_n += 1
+				
+		a.append("     %-8s | %2d/%2d/%2d  | %7.1f  | %7.1f  |%8.2f" \
+		    % (dev[:8], tickets, overbudget_n, no_estimate_n, tot_est, 
+		    hrs, dev_to_avgvelocity[dev]))
+		a.append("    ----------+-----------+----------+----------+----------")
 	a.append("")
-	a.append("            ** only tickets with estimates are counted")
+	a.append("            ** N1/ N2/ N3")
+	a.append("                 N1 = open tickets, with act <= est")
+	a.append("                 N2 = open tickets over budget (act > est)")
+	a.append("                 N3 = open tickets with no estimate")
 
 
 	data = "\n".join(a)
