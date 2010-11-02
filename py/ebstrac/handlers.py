@@ -1519,7 +1519,13 @@ def get_shipdate(com, req):
 		for dev1, ticket, est, act, diff in todo:
 			if dev == dev1:
 				tickets += 1
-				tot_est += est - act
+				
+                                # If they have an open ticket where
+                                # they have charged more time than
+                                # estimated, then don't _reduce_ the
+                                # hours left of work!  Just skip it.
+				if est - act > 0:
+					tot_est += est - act
 		a.append("     %-8s | %7d | %7.1f  | %7.1f  |%8.2f" \
 		    % (dev[:8], tickets, tot_est, hrs, dev_to_avgvelocity[dev]))
 		a.append("    ----------+---------+----------+----------+----------")
