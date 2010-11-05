@@ -818,7 +818,8 @@ def post_estimate(com, req):
 		row = cursor.fetchone()
 		col_n = 0
 		if row and row[0]:
-			col_n = int(row[0])
+			last_comment_number = row[0].split('.')[-1]
+			col_n = int(last_comment_number)
 		col_n += 1
 
 		dt = int(time())
