@@ -1,7 +1,7 @@
 A plug-in that enables evidence-based scheduling in Trac.
 
 	Created: Thu Aug 12 15:47:00 EDT 2010
-	Status : 
+	Status :
 		Done	Logging time
 		Done	Listing tickets
 		Test	Clock in / clock out
@@ -83,7 +83,7 @@ INSTALLING THE PLUGIN
 		...
 
 	If you are running trac as a FastCGI daemon, you'll
-	have to kill then restart the daemon.	
+	have to kill then restart the daemon.
 
 OTHER PROJECTS
 

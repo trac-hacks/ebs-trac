@@ -22,7 +22,7 @@ fi
 quotedurl=$(python -c "import urllib; print urllib.quote('''$url''')")
 
 u=$protocol://$host/$urlprefix/$quotedurl
-echo "$u:" 
+echo "$u:"
 
 # -k option because my SSL cert is self-signed, old, for wrong domain.
 # -H option so Trac will read query string arguments.

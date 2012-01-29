@@ -25,7 +25,7 @@ install-client: \
 $(MANDIR)/man1/ebsls.1: man/ebsls.1
 	mkdir -p $(MANDIR)/man1
 	cp man/ebsls.1 $(MANDIR)/man1
-	
+
 $(MANDIR)/man5/ebsconf.5: man/ebsconf.5
 	mkdir -p $(MANDIR)/man5
 	cp man/ebsconf.5 $(MANDIR)/man5
