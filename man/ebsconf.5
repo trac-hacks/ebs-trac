@@ -1,10 +1,10 @@
 .\"
 ." Copyright (c) 2010, Mark Bucciarelli <mark@crosscutmedia.com>
-." 
+."
 ." Permission to use, copy, modify, and/or distribute this software for any
 ." purpose with or without fee is hereby granted, provided that the above
 ." copyright notice and this permission notice appear in all copies.
-." 
+."
 ." THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
 ." WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
 ." MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
@@ -12,7 +12,7 @@
 ." WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
 ." ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 ." OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-." 
+."
 .\"
 .\"
 
@@ -26,9 +26,9 @@
 .Sh SYNOPSIS
 .Nm ~/.ebsconf
 .Sh DESCRIPTION
-The client utilities for Trac's evidence-based scheduling plugin 
+The client utilities for Trac's evidence-based scheduling plugin
 all obtain configuration data from the user's configuration file
-.Pq Pa ~/.ebsconf .  
+.Pq Pa ~/.ebsconf .
 The configuration file has the following format:
 .Pp
 Empty lines and lines starting with
@@ -36,7 +36,7 @@ Empty lines and lines starting with
 are comments.
 Otherwise a line is of the format
 .Dq keyword=value .
-There must be no spaces around the equals sign.  If a keyword value includes 
+There must be no spaces around the equals sign.  If a keyword value includes
 any whitespace, the value must be enclosed in double quotes
 .Pq \&" .
 .Pp
@@ -50,7 +50,7 @@ The protocol used to connect to Trac; for example, https.
 The host on which Trac is running.
 .It Cm urlprefix
 An url prefix to prepend to the resource before making the request
-to Trac.  At a minimum, this should be 
+to Trac.  At a minimum, this should be
 .Dq ebs/ .
 .It Cm user
 The Trac user name.

@@ -26,7 +26,7 @@ fi
 safedata=$(python -c "import urllib; print urllib.quote('''$data''')")
 
 u=$protocol://$host/$urlprefix/$url?data=$safedata
-echo "$u:" 
+echo "$u:"
 
 #
 # I couldn't figure out how to get around the __FORM_TOKEN

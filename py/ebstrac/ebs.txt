@@ -13,7 +13,7 @@ To compute these graphs, we need three arguments:
 	  Note that velocity is estimate / actual.
 
 		>>> history = (
-		... ('mark', 1, 1.0, 1.0, 1.0), 
+		... ('mark', 1, 1.0, 1.0, 1.0),
 		... )
 
 	* todo: (user, ticket, estimated_hours, actual_hours, left)
@@ -26,17 +26,17 @@ To compute these graphs, we need three arguments:
 
 	  One entry for each unique user/date combination.
 
-			   September 2010   
+			   September 2010
 			Su Mo Tu We Th Fr Sa
 				  1  2  3  4
 			 5  6  7  8  9 10 11
 			12 13 14 15 16 17 18
 			19 20 21 22 23 24 25
-			26 27 28 29 30      
+			26 27 28 29 30
 
 		>>> dev_to_hrs = {'mark': 1.0}
 
-The above three arguments define a very simple example, with 
+The above three arguments define a very simple example, with
 
 	* one user,
 	* no difference between the historical estimate and the actual,
@@ -64,7 +64,7 @@ For this toy, example, the one point has a y-value of 100.
 Checking the x-coordinate is a bit trickier, it should be one workday after
 today's date.  We'll use one of the utilities in the ebs module to
 help us.
-	
+
 	>>> from datetime import date, timedelta
 	>>> import ebs
 	>>> shipdate = ebs.advance_n_workdays(date.today(), 1)
@@ -90,11 +90,11 @@ all the date statistics are the same.
 	True
 	>>> q1 - shipdate == timedelta(0) or "%s, %s" % (q1, shipdate)
 	True
-	>>> q2 - shipdate == timedelta(0)  or "%s, %s" % (q2, shipdate) 
+	>>> q2 - shipdate == timedelta(0)  or "%s, %s" % (q2, shipdate)
 	True
-	>>> q3 - shipdate == timedelta(0)  or "%s, %s" % (q3, shipdate) 
+	>>> q3 - shipdate == timedelta(0)  or "%s, %s" % (q3, shipdate)
 	True
-	>>> max - shipdate == timedelta(0)  or "%s, %s" % (max, shipdate) 
+	>>> max - shipdate == timedelta(0)  or "%s, %s" % (max, shipdate)
 	True
 
 ======================================================================
@@ -115,8 +115,8 @@ A slightly more complicated example: two devs.
 (dev, ticket, estimated, actual, velocity)
 
 	>>> history = (
-	... ('mark', 1, 1.0, 1.0, 1.0), 
-	... ('paul', 1, 1.0, 1.0, 1.0), 
+	... ('mark', 1, 1.0, 1.0, 1.0),
+	... ('paul', 1, 1.0, 1.0, 1.0),
 	... )
 
 (dev, ticket, estimated_hours, actual_hours, left)
@@ -127,15 +127,15 @@ A slightly more complicated example: two devs.
 	... )
 
 
-(user, date, total_hours) 
+(user, date, total_hours)
 
-		   September 2010   
+		   September 2010
 		Su Mo Tu We Th Fr Sa
 			  1  2  3  4
 		 5  6  7  8  9 10 11
 		12 13 14 15 16 17 18
 		19 20 21 22 23 24 25
-		26 27 28 29 30      
+		26 27 28 29 30
 
 	>>> dev_to_hrs = {'mark': 5.0, 'paul': 1.0}
 
@@ -174,17 +174,17 @@ A test where the velocity is not 1.0.
 
 Dev #1 ship date:
 
-	estimated five hours left 
+	estimated five hours left
 	------------------------ = 10 hours left, based on history.
-	        velocity 
+	        velocity
 
 	@ 5 hours/day, he should finish in today + 2 days.
 
 Dev #2 ship date:
 
-	estimated six hours left 
+	estimated six hours left
 	------------------------ = 3 hours left, based on history.
-	        velocity 
+	        velocity
 
 	@ 1 hour/day, he should finish in today + 3 days.
 
@@ -193,8 +193,8 @@ Dev #2 ship date:
 (dev, ticket, estimated, actual, velocity)
 
 	>>> history = (
-	... ('mark', 1, 1.0, 2.0, 0.5), 
-	... ('paul', 1, 1.0, 0.5, 2.0), 
+	... ('mark', 1, 1.0, 2.0, 0.5),
+	... ('paul', 1, 1.0, 0.5, 2.0),
 	... )
 
 (dev, ticket, estimated_hours, actual_hours, left)
@@ -205,15 +205,15 @@ Dev #2 ship date:
 	... )
 
 
-(user, date, total_hours) 
+(user, date, total_hours)
 
-		   September 2010   
+		   September 2010
 		Su Mo Tu We Th Fr Sa
 			  1  2  3  4
 		 5  6  7  8  9 10 11
 		12 13 14 15 16 17 18
 		19 20 21 22 23 24 25
-		26 27 28 29 30      
+		26 27 28 29 30
 
 	>>> from datetime import date
 	>>> dt1 = date(2010, 9, 1)
@@ -252,11 +252,11 @@ in velocity.
 	True
 	>>> q1 - mark_dt == timedelta(0) or "%s, %s" % (q1, mark_dt)
 	True
-	>>> q2 - mark_dt == timedelta(0)  or "%s, %s" % (q2, mark_dt) 
+	>>> q2 - mark_dt == timedelta(0)  or "%s, %s" % (q2, mark_dt)
 	True
-	>>> q3 - mark_dt == timedelta(0)  or "%s, %s" % (q3, mark_dt) 
+	>>> q3 - mark_dt == timedelta(0)  or "%s, %s" % (q3, mark_dt)
 	True
-	>>> max - mark_dt == timedelta(0)  or "%s, %s" % (max, mark_dt) 
+	>>> max - mark_dt == timedelta(0)  or "%s, %s" % (max, mark_dt)
 	True
 
 	>>> dev = min = q1 = q2 = q3 = max = None
@@ -267,11 +267,11 @@ in velocity.
 	True
 	>>> q1 - paul_dt == timedelta(0) or "%s, %s" % (q1, paul_dt)
 	True
-	>>> q2 - paul_dt == timedelta(0)  or "%s, %s" % (q2, paul_dt) 
+	>>> q2 - paul_dt == timedelta(0)  or "%s, %s" % (q2, paul_dt)
 	True
-	>>> q3 - paul_dt == timedelta(0)  or "%s, %s" % (q3, paul_dt) 
+	>>> q3 - paul_dt == timedelta(0)  or "%s, %s" % (q3, paul_dt)
 	True
-	>>> max - paul_dt == timedelta(0)  or "%s, %s" % (max, paul_dt) 
+	>>> max - paul_dt == timedelta(0)  or "%s, %s" % (max, paul_dt)
 	True
 
 ======================================================================
@@ -299,8 +299,8 @@ Ship date:
 (dev, ticket, estimated, actual, velocity)
 
 	>>> history = (
-	... ('mark', 1, 1.0, 2.0, 0.5), 
-	... ('mark', 2, 1.0, 1.0, 1.0), 
+	... ('mark', 1, 1.0, 2.0, 0.5),
+	... ('mark', 2, 1.0, 1.0, 1.0),
 	... )
 
 (dev, ticket, estimated_hours, actual_hours, left)
@@ -309,7 +309,7 @@ Ship date:
 	... ('mark', 2, 6.0, 4.0, 2.0),
 	... )
 
-(user, date, total_hours) 
+(user, date, total_hours)
 
 	>>> dev_to_hrs = {'mark': 1.0}
 

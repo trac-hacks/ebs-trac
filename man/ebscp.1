@@ -1,10 +1,10 @@
 .\"
 ." Copyright (c) 2010, Mark Bucciarelli <mark@crosscutmedia.com>
-." 
+."
 ." Permission to use, copy, modify, and/or distribute this software for any
 ." purpose with or without fee is hereby granted, provided that the above
 ." copyright notice and this permission notice appear in all copies.
-." 
+."
 ." THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
 ." WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
 ." MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
@@ -12,7 +12,7 @@
 ." WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
 ." ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 ." OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-." 
+."
 .\"
 .\"
 
@@ -28,17 +28,17 @@
 .Ar data
 .Op resource
 .Sh DESCRIPTION
-Copy the given 
-.Ar data 
-to the given 
+Copy the given
+.Ar data
+to the given
 .Ar resource .
-For example, to book time to a ticket, 
+For example, to book time to a ticket,
 .Ar data
 would be the number of hours you worked, and the
 .Ar resource
 would be the ticket.  (See EXAMPLES section below for a specific example.)
 .Pp
-The default resource is 
+The default resource is
 .Nm clock .
 .Pp
 For ticket resources, you must be the owner of the ticket.
@@ -50,24 +50,24 @@ Tool to assist accurate tracking of time.  It supports the following
 data items:
 ." .Bl -enum -offset indent -compact
 .Bl -enum -offset indent -compact
-.It 
+.It
 .Nm start
 Clock in to a task.  Give the ticket number as the resource.  If clock
 is already running for this task, output the elapsed time since the
 clock started.  If clock is running for a different task, clock out of
 the first task (booking the elapsed time to that ticket), and start the
 clock running on the new ticket.
-.It 
+.It
 .Nm stop
 Clock out of a task and book the elapsed time to the ticket.  If the
 clock is not running, this has no effect.
-.It 
+.It
 .Nm clear
 Stop the clock without booking time to a ticket.
 .El
 .Ss ticket/<ticket_number>/estimate
 .Pp
-Estimate how many hours it will take you to finish 
+Estimate how many hours it will take you to finish
 .Ar ticket_number .
 .Pp
 A new estimate overwrites the previous estimate.
@@ -93,9 +93,9 @@ ticket.  The minutes are converted to hours and posted to the ticket.
 .Pp
 Change a ticket's status.  For this resource,
 .Ar data
-can either be 
+can either be
 .Dq closed
-or 
+or
 .Dq reopened .
 .Sh EXAMPLES
 .Pp
